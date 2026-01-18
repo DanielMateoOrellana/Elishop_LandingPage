@@ -1603,6 +1603,30 @@ ul {
 }
 
 /* ========================================
+   ACCESSIBILITY - Reduced Motion
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .card-animate,
+    .animate-scale-in,
+    .animate-fade-in,
+    .animate-slide-up,
+    .section-header .section-tag,
+    .section-header .section-title,
+    .section-header .section-description {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
+
+/* ========================================
    RESPONSIVE DESIGN
    ======================================== */
 @media (max-width: 1024px) {

@@ -38,23 +38,42 @@ export function useScrollAnimation(options = {}) {
 export function useStaggeredAnimation(itemCount, baseDelay = 100) {
     const [visibleItems, setVisibleItems] = useState([]);
     const containerRef = useRef(null);
+    const hasTriggered = useRef(false);
 
     useEffect(() => {
+        // Función para mostrar todos los items
+        const showAllItems = () => {
+            if (hasTriggered.current) return;
+            hasTriggered.current = true;
+
+            for (let i = 0; i < itemCount; i++) {
+                setTimeout(() => {
+                    setVisibleItems(prev => [...prev, i]);
+                }, i * baseDelay);
+            }
+        };
+
+        // Fallback: si después de 1 segundo no se ha disparado, mostrar todo
+        // Esto garantiza que en móviles el contenido siempre se muestre
+        const fallbackTimer = setTimeout(() => {
+            if (!hasTriggered.current) {
+                showAllItems();
+            }
+        }, 1000);
+
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    // Animación escalonada
-                    for (let i = 0; i < itemCount; i++) {
-                        setTimeout(() => {
-                            setVisibleItems(prev => [...prev, i]);
-                        }, i * baseDelay);
-                    }
+                    showAllItems();
                     if (containerRef.current) {
                         observer.unobserve(containerRef.current);
                     }
                 }
             },
-            { threshold: 0.1 }
+            {
+                threshold: 0.01, // Threshold más bajo para móviles
+                rootMargin: '50px 0px' // Detectar antes de que entre al viewport
+            }
         );
 
         if (containerRef.current) {
@@ -62,6 +81,7 @@ export function useStaggeredAnimation(itemCount, baseDelay = 100) {
         }
 
         return () => {
+            clearTimeout(fallbackTimer);
             if (containerRef.current) {
                 observer.unobserve(containerRef.current);
             }
