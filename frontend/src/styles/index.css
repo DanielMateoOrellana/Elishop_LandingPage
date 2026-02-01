@@ -1841,3 +1841,4 @@ ul {
         grid-template-columns: 1fr;
     }
 }
+.loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8fafc; color: #64748b; font-size: 1.25rem; }

@@ -1,9 +1,23 @@
-import { categories } from '../data/products';
+import { useState, useEffect } from 'react';
+import api from '../api';
 import { useScrollAnimation, useStaggeredAnimation } from '../hooks/useScrollAnimation';
 
 export default function Categories() {
+    const [categories, setCategories] = useState([]);
     const [headerRef, headerVisible] = useScrollAnimation();
     const [gridRef, visibleItems] = useStaggeredAnimation(categories.length, 100);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const { data } = await api.get('/categories');
+                setCategories(data);
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     return (
         <section className="categories" id="categories">
@@ -38,13 +52,16 @@ function CategoryCard({ category, visible }) {
             className={`category-card animate-scale-in ${visible ? 'visible' : ''}`}
             style={{ '--accent-color': category.color }}
             onClick={() => {
+                // Aquí podríamos navegar a una página de filtro por categoría en el futuro
                 document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
             }}
         >
             <div className="category-icon">{category.icon}</div>
             <h3>{category.name}</h3>
             <p>{category.description}</p>
-            <span className="category-count">{category.count}</span>
+            <span className="category-count">
+                {category._count?.products || 0} productos
+            </span>
         </div>
     );
 }
