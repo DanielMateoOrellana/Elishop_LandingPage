@@ -589,10 +589,10 @@ const ProductsPage = () => {
         .search-box { position: relative; max-width: 400px; }
         .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #64748b; }
         .search-box input { width: 100%; background: #0f1115; border: 1px solid #2d323b; padding: 0.75rem 1rem 0.75rem 3rem; border-radius: 0.75rem; color: white; }
-        .table-container { background: #181b21; border-radius: 1rem; border: 1px solid #2d323b; overflow: hidden; }
+        .table-container { background: #181b21; border-radius: 1rem; border: 1px solid #2d323b; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .data-table { width: 100%; border-collapse: collapse; color: #e2e8f0; }
-        .data-table th { background: #1e2229; padding: 1rem; text-align: left; font-weight: 600; color: #94a3b8; border-bottom: 1px solid #2d323b; font-size: 0.85rem; text-transform: uppercase; }
-        .data-table td { padding: 1rem; border-bottom: 1px solid #2d323b; vertical-align: middle; }
+        .data-table th { background: #1e2229; padding: 1rem; text-align: left; font-weight: 600; color: #94a3b8; border-bottom: 1px solid #2d323b; font-size: 0.85rem; text-transform: uppercase; white-space: nowrap; }
+        .data-table td { padding: 1rem; border-bottom: 1px solid #2d323b; vertical-align: middle; white-space: nowrap; }
         
         .product-cell { display: flex; align-items: center; gap: 1rem; }
         .product-thumb { width: 40px; height: 40px; background: #2d323b; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }

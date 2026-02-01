@@ -562,6 +562,22 @@ const CategoriesPage = () => {
         }
         
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Mobile Adjustments */
+        @media (max-width: 640px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .btn-primary {
+                width: 100%;
+                justify-content: center;
+            }
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
       `}</style>
         </div>
     );
