@@ -15,8 +15,13 @@ async function bootstrap() {
   console.log('--- END ENV CHECK ---');
 
   // Enable CORS
+  const corsOrigin = process.env.CORS_ORIGIN;
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: corsOrigin === '*'
+      ? '*'
+      : corsOrigin
+        ? corsOrigin.split(',')
+        : ['http://localhost:5173', 'http://localhost:3000'],
     credentials: true,
   });
 
