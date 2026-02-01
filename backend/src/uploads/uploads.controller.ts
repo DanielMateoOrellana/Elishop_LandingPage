@@ -43,6 +43,8 @@ export class UploadsController {
         res.set({
             'Content-Type': contentType,
             'Cache-Control': 'public, max-age=31536000',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET',
         });
 
         stream.pipe(res);
