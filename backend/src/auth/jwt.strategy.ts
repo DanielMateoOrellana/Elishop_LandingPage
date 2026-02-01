@@ -24,10 +24,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: JwtPayload) {
-        const user = await this.authService.validateUser(payload.sub);
-        if (!user) {
-            throw new UnauthorizedException();
+        console.log('JWT Validate Payload:', payload);
+        try {
+            const user = await this.authService.validateUser(payload.sub);
+            if (!user) {
+                console.log('User not found in DB for sub:', payload.sub);
+                throw new UnauthorizedException();
+            }
+            return user;
+        } catch (error) {
+            console.error('Error in JWT Strategy Validate:', error);
+            throw error;
         }
-        return user;
     }
 }
