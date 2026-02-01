@@ -16,12 +16,18 @@ async function bootstrap() {
 
   // Enable CORS
   const corsOrigin = process.env.CORS_ORIGIN;
+  const allowedOrigins = corsOrigin === '*'
+    ? '*'
+    : corsOrigin
+      ? corsOrigin.split(',').map(url => url.trim().replace(/\/$/, ''))
+      : ['http://localhost:5173', 'http://localhost:3000'];
+
+  console.log('--- CORS CONFIG ---');
+  console.log('Allowed Origins:', allowedOrigins);
+  console.log('--- END CORS CONFIG ---');
+
   app.enableCors({
-    origin: corsOrigin === '*'
-      ? '*'
-      : corsOrigin
-        ? corsOrigin.split(',')
-        : ['http://localhost:5173', 'http://localhost:3000'],
+    origin: allowedOrigins,
     credentials: true,
   });
 
