@@ -27,8 +27,24 @@ async function bootstrap() {
   console.log('--- END CORS CONFIG ---');
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (requestOrigin: string, callback: Function) => {
+      // Permitir requests sin 'origin' (ej: Postman, curl, server-to-server)
+      if (!requestOrigin) return callback(null, true);
+
+      // Si la variable es '*', permitir todo dinámicamente
+      if (allowedOrigins === '*') return callback(null, true);
+
+      // Verificar si el origen está en la lista permitida
+      if (Array.isArray(allowedOrigins) && allowedOrigins.includes(requestOrigin)) {
+        return callback(null, true);
+      }
+
+      console.warn(`Blocked CORS request from origin: ${requestOrigin}`);
+      callback(null, false);
+    },
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
   // Global validation pipe
