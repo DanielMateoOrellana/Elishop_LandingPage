@@ -154,6 +154,7 @@ const InventoryPage = () => {
           display: flex;
           flex-direction: column;
           gap: 2rem;
+          color: var(--admin-text-main);
         }
 
         .page-header {
@@ -161,25 +162,25 @@ const InventoryPage = () => {
           justify-content: space-between;
           align-items: center;
           padding-bottom: 1rem;
-          border-bottom: 1px solid #2d323b;
+          border-bottom: 1px solid var(--admin-border);
         }
 
         .page-header h1 {
           font-size: 1.75rem;
           font-weight: 700;
-          color: #f8fafc;
+          color: var(--admin-text-main);
           margin: 0;
           letter-spacing: -0.5px;
         }
 
         .page-header p {
-          color: #94a3b8;
+          color: var(--admin-text-muted);
           font-size: 0.95rem;
           margin: 0.25rem 0 0 0;
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+          background: var(--admin-accent-gradient);
           color: white;
           border: none;
           padding: 0.75rem 1.25rem;
@@ -201,16 +202,18 @@ const InventoryPage = () => {
         .filters-bar {
           display: flex;
           gap: 1.5rem;
-          background: #181b21;
+          background: var(--admin-card-bg);
           padding: 1rem;
           border-radius: 1rem;
-          border: 1px solid #2d323b;
+          border: 1px solid var(--admin-border);
           align-items: center;
+          flex-wrap: wrap; /* Responsive wrap */
         }
 
         .search-box {
           flex: 1;
           position: relative;
+          min-width: 200px;
         }
 
         .search-icon {
@@ -218,23 +221,23 @@ const InventoryPage = () => {
           left: 1rem;
           top: 50%;
           transform: translateY(-50%);
-          color: #64748b;
+          color: var(--admin-text-muted);
         }
 
         .search-box input {
           width: 100%;
           padding: 0.75rem 1rem 0.75rem 3rem;
-          border: 1px solid #2d323b;
-          background: #0f1115;
+          border: 1px solid var(--admin-border);
+          background: var(--admin-input-bg);
           border-radius: 0.75rem;
-          color: #f8fafc;
+          color: var(--admin-text-main);
           font-size: 0.95rem;
           transition: all 0.2s;
         }
         
         .search-box input:focus {
           outline: none;
-          border-color: #ec4899;
+          border-color: var(--admin-accent);
           box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2);
         }
 
@@ -244,7 +247,7 @@ const InventoryPage = () => {
           gap: 0.75rem;
           cursor: pointer;
           font-size: 0.9rem;
-          color: #cbd5e1;
+          color: var(--admin-text-muted);
           user-select: none;
         }
         
@@ -255,7 +258,7 @@ const InventoryPage = () => {
         .toggle-switch {
           width: 40px;
           height: 22px;
-          background: #2d323b;
+          background: var(--admin-border);
           border-radius: 20px;
           position: relative;
           transition: all 0.3s;
@@ -274,7 +277,7 @@ const InventoryPage = () => {
         }
         
         .toggle-label input:checked + .toggle-switch {
-          background: #ec4899;
+          background: var(--admin-accent);
         }
         
         .toggle-label input:checked + .toggle-switch::after {
@@ -282,35 +285,37 @@ const InventoryPage = () => {
         }
 
         .table-container {
-          background: #181b21;
+          background: var(--admin-card-bg);
           border-radius: 1rem;
-          border: 1px solid #2d323b;
-          overflow: hidden;
+          border: 1px solid var(--admin-border);
+          overflow-x: auto; /* Scroll horizontal si es necesario */
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .data-table {
           width: 100%;
           border-collapse: collapse;
+          white-space: nowrap; /* Evitar que celdas se rompan feo */
         }
 
         .data-table th {
-          background: #1e2229;
+          background: var(--admin-card-header);
           padding: 1rem 1.5rem;
           text-align: left;
           font-size: 0.75rem;
           font-weight: 700;
-          color: #94a3b8;
+          color: var(--admin-text-muted);
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          border-bottom: 1px solid #2d323b;
+          border-bottom: 1px solid var(--admin-border);
         }
 
         .data-table td {
-          padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid #2d323b;
+          padding: 1rem 1.5rem; /* Menos padding vertical */
+          border-bottom: 1px solid var(--admin-border);
           font-size: 0.9rem;
-          color: #e2e8f0;
+          color: var(--admin-text-main);
+          vertical-align: middle;
         }
         
         .data-table tr:last-child td {
@@ -318,7 +323,7 @@ const InventoryPage = () => {
         }
         
         .data-table tr:hover td {
-          background: rgba(255, 255, 255, 0.02);
+          background: var(--admin-hover);
         }
 
         .product-cell {
@@ -331,13 +336,14 @@ const InventoryPage = () => {
           width: 48px;
           height: 48px;
           border-radius: 0.75rem;
-          background: #2d323b;
+          background: var(--admin-border);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #64748b;
+          color: var(--admin-text-muted);
           overflow: hidden;
-          border: 1px solid #374151;
+          border: 1px solid var(--admin-border);
+          flex-shrink: 0;
         }
         
         .product-img img {
@@ -354,21 +360,21 @@ const InventoryPage = () => {
 
         .product-info .name {
           font-weight: 600;
-          color: #f8fafc;
+          color: var(--admin-text-main);
         }
         
         .product-info .category {
           font-size: 0.75rem;
-          color: #94a3b8;
+          color: var(--admin-text-muted);
         }
         
         .sku-badge {
           font-family: monospace;
-          background: #0f1115;
+          background: var(--admin-input-bg);
           padding: 0.25rem 0.5rem;
           border-radius: 0.375rem;
-          color: #94a3b8;
-          border: 1px solid #2d323b;
+          color: var(--admin-text-muted);
+          border: 1px solid var(--admin-border);
           font-size: 0.8rem;
         }
 
@@ -409,18 +415,18 @@ const InventoryPage = () => {
 
         .btn-icon {
           background: transparent;
-          border: 1px solid #374151;
+          border: 1px solid var(--admin-border);
           padding: 0.5rem;
           border-radius: 0.5rem;
-          color: #94a3b8;
+          color: var(--admin-text-muted);
           cursor: pointer;
           transition: all 0.2s;
         }
 
         .btn-icon:hover {
-          background: #2d323b;
-          color: #ec4899;
-          border-color: #ec4899;
+          background: var(--admin-hover);
+          color: var(--admin-accent);
+          border-color: var(--admin-accent);
         }
         
         .loading-state {
@@ -429,7 +435,7 @@ const InventoryPage = () => {
           flex-direction: column;
           align-items: center;
           gap: 1rem;
-          color: #94a3b8;
+          color: var(--admin-text-muted);
         }
         
         .spinner {
@@ -450,16 +456,28 @@ const InventoryPage = () => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          color: #64748b;
+          color: var(--admin-text-muted);
         }
         
         .empty-content h3 {
-          color: #f8fafc;
+          color: var(--admin-text-main);
           margin: 1rem 0 0.5rem 0;
         }
         
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .btn-primary { width: 100%; justify-content: center; }
+            .filters-bar { flex-direction: column; align-items: stretch; }
+            .search-box { width: 100%; }
+            .toggle-label { justify-content: space-between; padding: 0.5rem 0; border-top: 1px solid var(--admin-border); margin-top: 0.5rem; }
         }
       `}</style>
     </div>

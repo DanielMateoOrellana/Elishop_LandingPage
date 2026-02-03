@@ -1842,3 +1842,57 @@ ul {
     }
 }
 .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8fafc; color: #64748b; font-size: 1.25rem; }
+/* ========================================
+   ADMIN THEME SYSTEM
+   ======================================== */
+
+/* DEFAULT DARK THEME (Matches existing hardcoded admin colors) */
+:root {
+    --admin-bg: #0f1115;
+    --admin-sidebar-bg: #181b21;
+    --admin-content-padding: 2.5rem;
+    
+    --admin-card-bg: #181b21;
+    --admin-card-header: #1e293b;
+    
+    --admin-border: #2d323b;
+    --admin-input-bg: #0f1115;
+    
+    --admin-text-main: #f8fafc;
+    --admin-text-muted: #94a3b8;
+    
+    --admin-accent: #ec4899;
+    --admin-accent-gradient: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+    
+    --admin-hover: rgba(255, 255, 255, 0.03);
+    --admin-badge-bg: #2d323b;
+}
+
+/* PINK THEME OVERRIDE */
+[data-theme='pink'] {
+    --admin-bg: #fff0f5; /* Lavender Blush Background */
+    --admin-sidebar-bg: #ffffff;
+    
+    --admin-card-bg: #ffffff;
+    --admin-card-header: #ffeef2;
+    
+    --admin-border: #f8bbd0; /* Soft Pink Border */
+    --admin-input-bg: #ffffff;
+    
+    --admin-text-main: #880e4f; /* Dark Pink Text */
+    --admin-text-muted: #ad1457; /* Medium Pink Text */
+    
+    --admin-accent: #d81b60;
+    --admin-accent-gradient: linear-gradient(135deg, #ff80ab 0%, #ff4081 100%);
+    
+    --admin-hover: #ffeef2;
+    --admin-badge-bg: #ffeef2;
+}
+
+/* Utility Class for Theme Transition */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.admin-sidebar, .admin-layout, .card, input, select, textarea, .modal-content {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
