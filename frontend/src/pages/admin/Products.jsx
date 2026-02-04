@@ -22,7 +22,9 @@ const ProductsPage = () => {
         price: '',
         compareAtPrice: '', // New field for original price
         categoryId: '',
-        initialStock: 0,
+        categoryId: '',
+        stockZaruma: 0,
+        stockSangolqui: 0,
         minStock: 5,
         images: [{ url: '' }],
         isActive: true,
@@ -65,8 +67,10 @@ const ProductsPage = () => {
                 compareAtPrice: product.compareAtPrice || '',
                 categoryId: product.categoryId,
                 // Inventory fields are usually not editable here directly, handled via inventory module
-                initialStock: 0,
-                minStock: 5,
+                // Inventory
+                stockZaruma: product.inventory?.stockZaruma || 0,
+                stockSangolqui: product.inventory?.stockSangolqui || 0,
+                minStock: product.inventory?.minStock || 5,
                 images: product.images?.length > 0 ? product.images.map(img => ({ url: img.url })) : [{ url: '' }],
                 isActive: product.isActive,
                 isFeatured: product.isFeatured
@@ -81,7 +85,9 @@ const ProductsPage = () => {
                 price: '',
                 compareAtPrice: '',
                 categoryId: categories[0]?.id || '', // Default to first category if exists
-                initialStock: 10,
+                categoryId: categories[0]?.id || '', // Default to first category if exists
+                stockZaruma: 0,
+                stockSangolqui: 0,
                 minStock: 5,
                 images: [{ url: '' }],
                 isActive: true,
@@ -121,10 +127,10 @@ const ProductsPage = () => {
                 categoryId: formData.categoryId,
 
                 // Inventory (solo creation)
-                ...(editingProduct ? {} : {
-                    initialStock: parseInt(formData.initialStock),
-                    minStock: parseInt(formData.minStock)
-                }),
+                // Inventory fields (now editable)
+                stockZaruma: parseInt(formData.stockZaruma),
+                stockSangolqui: parseInt(formData.stockSangolqui),
+                minStock: parseInt(formData.minStock),
 
                 // Filter out empty image URLs
                 images: formData.images.filter(img => img.url.trim() !== ''),
@@ -143,8 +149,14 @@ const ProductsPage = () => {
             fetchData();
         } catch (error) {
             console.error(error);
-            const msg = error.response?.data?.message;
-            toast.error(Array.isArray(msg) ? msg[0] : 'Error al guardar');
+            const msg = error.response?.data?.message || 'Error desconocido';
+
+            // Detectar error de duplicidad (Prisma P2002 suele devolver mensaje genérico en prod, pero NestJS puede detallarlo)
+            if (msg.toString().includes('Unique constraint') || msg.toString().includes('slug')) {
+                toast.error('Ya existe un producto con este nombre URL (slug). Intenta con otro.');
+            } else {
+                toast.error(Array.isArray(msg) ? msg[0] : 'Error al guardar');
+            }
         }
     };
 
@@ -368,17 +380,26 @@ const ProductsPage = () => {
                                         />
                                     </div>
 
-                                    {/* 5. Stock Inicial (Solo al crear) */}
-                                    {!editingProduct && (
-                                        <div className="form-group span-2">
-                                            <label>Stock Inicial</label>
-                                            <input
-                                                type="number"
-                                                value={formData.initialStock}
-                                                onChange={(e) => setFormData({ ...formData, initialStock: e.target.value })}
-                                            />
-                                        </div>
-                                    )}
+                                    {/* 5. Stocks por Sucursal */}
+                                    <div className="form-group">
+                                        <label>Stock Zaruma</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={formData.stockZaruma}
+                                            onChange={(e) => setFormData({ ...formData, stockZaruma: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Stock Sangolquí</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={formData.stockSangolqui}
+                                            onChange={(e) => setFormData({ ...formData, stockSangolqui: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 

@@ -8,7 +8,12 @@ export class ProductsService {
     constructor(private prisma: PrismaService) { }
 
     async create(createProductDto: CreateProductDto) {
-        const { images, initialStock, minStock, ...productData } = createProductDto;
+        const { images, initialStock, stockZaruma, stockSangolqui, minStock, ...productData } = createProductDto;
+
+        // Calcular stock total
+        const zaruma = stockZaruma ?? 0;
+        const sangolqui = stockSangolqui ?? 0;
+        const totalStock = (initialStock ?? 0) + zaruma + sangolqui;
 
         return this.prisma.product.create({
             data: {
@@ -28,7 +33,9 @@ export class ProductsService {
                     : undefined,
                 inventory: {
                     create: {
-                        stock: initialStock ?? 0,
+                        stock: totalStock,
+                        stockZaruma: zaruma,
+                        stockSangolqui: sangolqui,
                         minStock: minStock ?? 5,
                     },
                 },
@@ -141,7 +148,24 @@ export class ProductsService {
     async update(id: string, updateProductDto: UpdateProductDto) {
         await this.findOne(id);
 
-        const { images, ...productData } = updateProductDto;
+        const { images, stockZaruma, stockSangolqui, initialStock, minStock, ...productData } = updateProductDto as any; // Cast to any to access new fields if DTO not fully inferred
+
+        // Preparar actualización de inventario si vienen datos
+        let inventoryUpdate = undefined;
+        if (stockZaruma !== undefined || stockSangolqui !== undefined || minStock !== undefined) {
+            const currentInventory = await this.prisma.inventory.findUnique({ where: { productId: id } });
+            const newZaruma = stockZaruma ?? currentInventory?.stockZaruma ?? 0;
+            const newSangolqui = stockSangolqui ?? currentInventory?.stockSangolqui ?? 0;
+
+            inventoryUpdate = {
+                update: {
+                    stockZaruma: stockZaruma,
+                    stockSangolqui: stockSangolqui,
+                    stock: newZaruma + newSangolqui,
+                    minStock: minStock
+                }
+            };
+        }
 
         return this.prisma.product.update({
             where: { id },
@@ -153,6 +177,7 @@ export class ProductsService {
                 compareAtPrice: productData.compareAtPrice
                     ? new Prisma.Decimal(productData.compareAtPrice)
                     : undefined,
+                inventory: inventoryUpdate,
             },
             include: {
                 category: true,

@@ -76,5 +76,17 @@ export class CreateProductDto {
     @IsNumber()
     @Min(0)
     @Type(() => Number)
+    stockZaruma?: number;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    stockSangolqui?: number;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
     minStock?: number;
 }

@@ -12,6 +12,8 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto';
 
+import { Public } from '../auth/decorators';
+
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {
@@ -23,6 +25,7 @@ export class ProductsController {
         return this.productsService.create(createProductDto);
     }
 
+    @Public()
     @Get()
     @ApiOperation({ summary: 'Get all products with pagination' })
     @ApiQuery({ name: 'categoryId', required: false })
@@ -58,12 +61,14 @@ export class ProductsController {
         );
     }
 
+    @Public()
     @Get(':id')
     @ApiOperation({ summary: 'Get product by ID' })
     findOne(@Param('id') id: string) {
         return this.productsService.findOne(id);
     }
 
+    @Public()
     @Get('slug/:slug')
     @ApiOperation({ summary: 'Get product by slug' })
     findBySlug(@Param('slug') slug: string) {

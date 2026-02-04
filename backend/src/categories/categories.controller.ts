@@ -12,6 +12,8 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto';
 
+import { Public } from '../auth/decorators';
+
 @ApiTags('Categories')
 @Controller('categories')
 export class CategoriesController {
@@ -23,6 +25,7 @@ export class CategoriesController {
         return this.categoriesService.create(createCategoryDto);
     }
 
+    @Public()
     @Get()
     @ApiOperation({ summary: 'Get all categories' })
     @ApiQuery({ name: 'includeInactive', required: false, type: Boolean })
@@ -30,12 +33,14 @@ export class CategoriesController {
         return this.categoriesService.findAll(includeInactive === 'true');
     }
 
+    @Public()
     @Get(':id')
     @ApiOperation({ summary: 'Get category by ID' })
     findOne(@Param('id') id: string) {
         return this.categoriesService.findOne(id);
     }
 
+    @Public()
     @Get('slug/:slug')
     @ApiOperation({ summary: 'Get category by slug' })
     findBySlug(@Param('slug') slug: string) {

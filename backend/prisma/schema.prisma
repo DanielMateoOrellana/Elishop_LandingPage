@@ -77,13 +77,14 @@ model Inventory {
   productId     String    @unique
   product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   
-  stock         Int       @default(0)
+  stock         Int       @default(0) // Total Global
+  stockZaruma   Int       @default(0)
+  stockSangolqui Int      @default(0)
   minStock      Int       @default(5)
   maxStock      Int?
   
   lastRestocked DateTime?
   lastSold      DateTime?
-  location      String?
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

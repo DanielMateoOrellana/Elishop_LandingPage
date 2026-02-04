@@ -127,6 +127,16 @@ function ProductCard({ product, visible }) {
                 <span className="product-category">{product.category?.name || 'Joyería'}</span>
                 <h3 className="product-name">{product.name}</h3>
 
+                {/* Info Stock */}
+                <div className="stock-info">
+                    <div className={`stock-location ${product.inventory?.stockZaruma > 0 ? 'text-green' : 'text-gray'}`}>
+                        📍 Zaruma: <strong>{product.inventory?.stockZaruma || 0}</strong>
+                    </div>
+                    <div className={`stock-location ${product.inventory?.stockSangolqui > 0 ? 'text-green' : 'text-gray'}`}>
+                        📍 Sangolquí: <strong>{product.inventory?.stockSangolqui || 0}</strong>
+                    </div>
+                </div>
+
                 <div className="price-block">
                     {hasDiscount && (
                         <span className="compare-price">
@@ -186,9 +196,28 @@ function ProductCard({ product, visible }) {
                     font-size: 1.25rem;
                     font-weight: 700;
                     color: #1a1a2e;
-                    margin-bottom: 1rem;
+                    margin-bottom: 0.5rem;
                     line-height: 1.3;
                 }
+
+                .stock-info {
+                    display: flex;
+                    gap: 1rem;
+                    font-size: 0.85rem;
+                    margin-bottom: 1rem;
+                    background: #f8fafc;
+                    padding: 0.5rem;
+                    border-radius: 0.5rem;
+                }
+
+                .stock-location {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.25rem;
+                }
+
+                .text-green { color: #16a34a; }
+                .text-gray { color: #94a3b8; opacity: 0.8; }
 
                 .line-clamp-2 {
                     display: -webkit-box;
