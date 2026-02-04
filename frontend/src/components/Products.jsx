@@ -149,6 +149,47 @@ function ProductCard({ product, visible }) {
             </div>
 
             <style>{`
+                .product-card {
+                    background: white;
+                    border-radius: 1rem;
+                    overflow: hidden;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    transition: all 0.3s ease;
+                }
+                
+                .product-image img {
+                    width: 100%;
+                    height: 300px;
+                    object-fit: cover;
+                    transition: transform 0.5s ease;
+                }
+
+                .product-card:hover .product-image img {
+                   transform: scale(1.05);
+                }
+                
+                .product-info {
+                    padding: 1.5rem;
+                }
+
+                .product-category {
+                    color: #ec4899;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    display: block;
+                    margin-bottom: 0.5rem;
+                }
+
+                .product-name {
+                    font-size: 1.25rem;
+                    font-weight: 700;
+                    color: #1a1a2e;
+                    margin-bottom: 1rem;
+                    line-height: 1.3;
+                }
+
                 .line-clamp-2 {
                     display: -webkit-box;
                     -webkit-line-clamp: 2;
@@ -170,28 +211,61 @@ function ProductCard({ product, visible }) {
                     color: white;
                     font-weight: 800;
                     box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 9999px;
+                    font-size: 0.85rem;
                 }
-                .product-badge.star { background: linear-gradient(135deg, #ffd700, #ffb700); color: #000; font-weight: bold; }
+                .product-badge.star { 
+                    background: linear-gradient(135deg, #ffd700, #ffb700); 
+                    color: #000; 
+                    font-weight: bold; 
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 9999px;
+                    font-size: 0.85rem;
+                }
 
                 .price-block {
                     display: flex;
                     align-items: baseline;
                     gap: 0.75rem;
-                    margin: 0.5rem 0 1rem 0;
+                    margin: 0.5rem 0 1.5rem 0;
                 }
+                
                 .price {
-                    color: #f8fafc;
+                    color: #1a1a2e;
                     font-weight: 700;
-                    font-size: 1.25rem;
+                    font-size: 1.5rem;
                 }
+                
                 .price.highlight {
                     color: #ec4899;
-                    font-size: 1.4rem;
+                    font-size: 1.5rem;
                 }
+                
                 .compare-price {
                     color: #94a3b8;
                     text-decoration: line-through;
-                    font-size: 0.95rem;
+                    font-size: 1rem;
+                }
+                
+                .product-btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 100%;
+                    padding: 0.75rem;
+                    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 0.75rem;
+                    font-weight: 600;
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 10px rgba(236, 72, 153, 0.3);
+                }
+                
+                .product-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
                 }
             `}</style>
         </div>
