@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
-import { Package, Search, Plus, AlertCircle, ArrowUpDown } from 'lucide-react';
+import { Package, Search, AlertCircle, TrendingUp } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const InventoryPage = () => {
@@ -36,16 +36,21 @@ const InventoryPage = () => {
     fetchInventory();
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    // Intencionalmente simple, solo fecha.
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+  };
+
   return (
     <div className="inventory-page">
       <div className="page-header">
         <div>
           <h1>Gestión de Inventario</h1>
-          <p>Control de stock y movimientos</p>
+          <p>Visualización de stock por bodegas</p>
         </div>
-        <button className="btn-primary">
-          <Plus size={20} /> Nuevo Movimiento
-        </button>
       </div>
 
       <div className="filters-bar">
@@ -53,7 +58,7 @@ const InventoryPage = () => {
           <Search size={20} className="search-icon" />
           <input
             type="text"
-            placeholder="Buscar por nombre o SKU..."
+            placeholder="Buscar por nombre..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -83,11 +88,11 @@ const InventoryPage = () => {
             <thead>
               <tr>
                 <th>Producto</th>
-                <th>SKU</th>
-                <th>Stock Actual</th>
+                <th className="text-center">Stock Zaruma</th>
+                <th className="text-center">Stock Sangolquí</th>
+                <th className="text-center">Stock Total</th>
                 <th>Estado</th>
                 <th>Última Venta</th>
-                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -106,30 +111,45 @@ const InventoryPage = () => {
                       <span className="category">{item.product.category?.name}</span>
                     </div>
                   </td>
-                  <td><span className="sku-badge">{item.product.sku || '-'}</span></td>
-                  <td>
+
+                  {/* Bodegas */}
+                  <td className="text-center">
+                    <span className="location-stock">{item.stockZaruma || 0}</span>
+                  </td>
+                  <td className="text-center">
+                    <span className="location-stock">{item.stockSangolqui || 0}</span>
+                  </td>
+
+                  {/* Total */}
+                  <td className="text-center">
                     <div className="stock-badge">
                       <span className={`stock-count ${item.stock <= item.minStock ? 'low' : 'good'}`}>
                         {item.stock}
                       </span>
                     </div>
                   </td>
+
+                  {/* Estado */}
                   <td>
                     {item.stock === 0 ? (
                       <span className="status-badge out">Agotado</span>
-                    ) : item.stock <= item.minStock ? (
-                      <span className="status-badge low">Stock Bajo</span>
                     ) : (
                       <span className="status-badge good">Disponible</span>
                     )}
                   </td>
+
+                  {/* Última Venta */}
                   <td>
-                    {item.lastSold ? new Date(item.lastSold).toLocaleDateString() : '-'}
-                  </td>
-                  <td>
-                    <button className="btn-icon" title="Ver movimientos">
-                      <ArrowUpDown size={18} />
-                    </button>
+                    <div className="last-sold">
+                      {item.lastSold ? (
+                        <>
+                          <TrendingUp size={14} className="text-gray-400" />
+                          <span>{formatDate(item.lastSold)}</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -155,6 +175,7 @@ const InventoryPage = () => {
           flex-direction: column;
           gap: 2rem;
           color: var(--admin-text-main);
+          font-family: var(--font-body); /* Asegurar fuente global */
         }
 
         .page-header {
@@ -179,26 +200,7 @@ const InventoryPage = () => {
           margin: 0.25rem 0 0 0;
         }
 
-        .btn-primary {
-          background: var(--admin-accent-gradient);
-          color: white;
-          border: none;
-          padding: 0.75rem 1.25rem;
-          border-radius: 0.75rem;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.3);
-        }
-
-        .btn-primary:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.4);
-        }
-
+        /* ... filtros y header iguales ... */
         .filters-bar {
           display: flex;
           gap: 1.5rem;
@@ -207,7 +209,7 @@ const InventoryPage = () => {
           border-radius: 1rem;
           border: 1px solid var(--admin-border);
           align-items: center;
-          flex-wrap: wrap; /* Responsive wrap */
+          flex-wrap: wrap;
         }
 
         .search-box {
@@ -233,6 +235,7 @@ const InventoryPage = () => {
           color: var(--admin-text-main);
           font-size: 0.95rem;
           transition: all 0.2s;
+          font-family: var(--font-body);
         }
         
         .search-box input:focus {
@@ -251,52 +254,28 @@ const InventoryPage = () => {
           user-select: none;
         }
         
-        .toggle-label input {
-          display: none;
-        }
+        .toggle-label input { display: none; }
         
         .toggle-switch {
-          width: 40px;
-          height: 22px;
-          background: var(--admin-border);
-          border-radius: 20px;
-          position: relative;
-          transition: all 0.3s;
+          width: 40px; height: 22px; background: var(--admin-border);
+          border-radius: 20px; position: relative; transition: all 0.3s;
         }
-        
         .toggle-switch::after {
-          content: '';
-          position: absolute;
-          width: 18px;
-          height: 18px;
-          background: white;
-          border-radius: 50%;
-          top: 2px;
-          left: 2px;
-          transition: all 0.3s;
+          content: ''; position: absolute; width: 18px; height: 18px;
+          background: white; border-radius: 50%; top: 2px; left: 2px; transition: all 0.3s;
         }
-        
-        .toggle-label input:checked + .toggle-switch {
-          background: var(--admin-accent);
-        }
-        
-        .toggle-label input:checked + .toggle-switch::after {
-          transform: translateX(18px);
-        }
+        .toggle-label input:checked + .toggle-switch { background: var(--admin-accent); }
+        .toggle-label input:checked + .toggle-switch::after { transform: translateX(18px); }
 
         .table-container {
           background: var(--admin-card-bg);
           border-radius: 1rem;
           border: 1px solid var(--admin-border);
-          overflow-x: auto; /* Scroll horizontal si es necesario */
+          overflow-x: auto;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        .data-table {
-          width: 100%;
-          border-collapse: collapse;
-          white-space: nowrap; /* Evitar que celdas se rompan feo */
-        }
+        .data-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
 
         .data-table th {
           background: var(--admin-card-header);
@@ -309,82 +288,44 @@ const InventoryPage = () => {
           letter-spacing: 0.05em;
           border-bottom: 1px solid var(--admin-border);
         }
+        .data-table th.text-center { text-align: center; }
+        .data-table td.text-center { text-align: center; }
 
         .data-table td {
-          padding: 1rem 1.5rem; /* Menos padding vertical */
+          padding: 1rem 1.5rem;
           border-bottom: 1px solid var(--admin-border);
           font-size: 0.9rem;
           color: var(--admin-text-main);
           vertical-align: middle;
         }
-        
-        .data-table tr:last-child td {
-          border-bottom: none;
-        }
-        
-        .data-table tr:hover td {
-          background: var(--admin-hover);
-        }
+        .data-table tr:hover td { background: var(--admin-hover); }
 
-        .product-cell {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-        }
-
+        .product-cell { display: flex; gap: 1rem; align-items: center; }
         .product-img {
-          width: 48px;
-          height: 48px;
-          border-radius: 0.75rem;
-          background: var(--admin-border);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--admin-text-muted);
-          overflow: hidden;
-          border: 1px solid var(--admin-border);
-          flex-shrink: 0;
+          width: 48px; height: 48px; border-radius: 0.75rem;
+          background: var(--admin-border); display: flex; align-items: center; justify-content: center;
+          color: var(--admin-text-muted); overflow: hidden; border: 1px solid var(--admin-border); flex-shrink: 0;
         }
+        .product-img img { width: 100%; height: 100%; object-fit: cover; }
         
-        .product-img img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .product-info {
-          display: flex;
-          flex-direction: column;
-          gap: 0.125rem;
-        }
-
+        .product-info { display: flex; flex-direction: column; gap: 0.125rem; }
         .product-info .name {
-          font-weight: 600;
-          color: var(--admin-text-main);
+            font-weight: 600;
+            color: var(--admin-text-main);
+            font-family: var(--font-body); /* IMPORTANTE: FUENTE ESTANDAR */
         }
-        
-        .product-info .category {
-          font-size: 0.75rem;
-          color: var(--admin-text-muted);
-        }
-        
-        .sku-badge {
-          font-family: monospace;
-          background: var(--admin-input-bg);
-          padding: 0.25rem 0.5rem;
-          border-radius: 0.375rem;
-          color: var(--admin-text-muted);
-          border: 1px solid var(--admin-border);
-          font-size: 0.8rem;
-        }
+        .product-info .category { font-size: 0.75rem; color: var(--admin-text-muted); }
 
-        .stock-badge .stock-count {
-          font-weight: 700;
-          font-size: 1rem;
-        }
-        
+        .stock-badge .stock-count { font-weight: 700; font-size: 1rem; }
         .stock-count.low { color: #ef4444; }
         .stock-count.good { color: #10b981; }
+        
+        .location-stock {
+            /* Eliminado Space Mono */
+            color: var(--admin-text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
 
         .status-badge {
           padding: 0.375rem 0.75rem;
@@ -394,91 +335,22 @@ const InventoryPage = () => {
           display: inline-flex;
           align-items: center;
         }
+        .status-badge.out { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .status-badge.good { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
 
-        .status-badge.out { 
-          background: rgba(239, 68, 68, 0.15); 
-          color: #ef4444; 
-          border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-        
-        .status-badge.low { 
-          background: rgba(245, 158, 11, 0.15); 
-          color: #fbbf24; 
-          border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-        
-        .status-badge.good { 
-          background: rgba(16, 185, 129, 0.15); 
-          color: #34d399; 
-          border: 1px solid rgba(16, 185, 129, 0.2);
-        }
+        .last-sold { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--admin-text-muted); }
 
-        .btn-icon {
-          background: transparent;
-          border: 1px solid var(--admin-border);
-          padding: 0.5rem;
-          border-radius: 0.5rem;
-          color: var(--admin-text-muted);
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .btn-icon:hover {
-          background: var(--admin-hover);
-          color: var(--admin-accent);
-          border-color: var(--admin-accent);
-        }
-        
-        .loading-state {
-          padding: 4rem;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1rem;
-          color: var(--admin-text-muted);
-        }
-        
+        .loading-state, .empty-state { padding: 4rem; text-align: center; color: var(--admin-text-muted); }
         .spinner {
-          width: 24px;
-          height: 24px;
-          border: 3px solid rgba(236, 72, 153, 0.3);
-          border-top-color: #ec4899;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
+          width: 24px; height: 24px; border: 3px solid rgba(236, 72, 153, 0.3);
+          border-top-color: #ec4899; border-radius: 50%;
+          animation: spin 1s linear infinite; margin: 0 auto 1rem;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
         
-        .empty-state {
-          text-align: center;
-          padding: 4rem 2rem;
-        }
-        
-        .empty-content {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          color: var(--admin-text-muted);
-        }
-        
-        .empty-content h3 {
-          color: var(--admin-text-main);
-          margin: 1rem 0 0.5rem 0;
-        }
-        
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 768px) {
-            .page-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-            .btn-primary { width: 100%; justify-content: center; }
-            .filters-bar { flex-direction: column; align-items: stretch; }
-            .search-box { width: 100%; }
-            .toggle-label { justify-content: space-between; padding: 0.5rem 0; border-top: 1px solid var(--admin-border); margin-top: 0.5rem; }
-        }
+        .text-gray-400 { color: #9ca3af; }
+        .text-gray-500 { color: #6b7280; }
+        .font-bold { font-weight: 700; }
       `}</style>
     </div>
   );
