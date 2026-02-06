@@ -24,6 +24,10 @@ export class UpdateStockDto {
     @IsOptional()
     @IsString()
     reference?: string;
+
+    @IsOptional()
+    @IsString()
+    location?: 'Zaruma' | 'Sangolqui';
 }
 
 export class SetStockDto {
@@ -34,6 +38,10 @@ export class SetStockDto {
     @IsOptional()
     @IsString()
     reason?: string;
+
+    @IsOptional()
+    @IsString()
+    location?: 'Zaruma' | 'Sangolqui';
 }
 
 export class UpdateInventorySettingsDto {

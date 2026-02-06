@@ -68,16 +68,44 @@ export class InventoryService {
 
     async updateStock(productId: string, updateStockDto: UpdateStockDto, userId?: string) {
         const inventory = await this.getInventoryByProductId(productId);
+        const { quantity, location, reason, reference } = updateStockDto;
 
-        const newStock = inventory.stock + updateStockDto.quantity;
-        if (newStock < 0) {
-            throw new BadRequestException(
-                `Cannot reduce stock below 0. Current: ${inventory.stock}, Requested change: ${updateStockDto.quantity}`,
-            );
+        let newStock = inventory.stock;
+        let newZaruma = inventory.stockZaruma;
+        let newSangolqui = inventory.stockSangolqui;
+
+        // Logic for location-specific updates
+        if (location === 'Zaruma') {
+            newZaruma = (inventory.stockZaruma || 0) + quantity;
+            if (newZaruma < 0) {
+                throw new BadRequestException(
+                    `No hay suficiente stock en Zaruma. Actual: ${inventory.stockZaruma}, Solicitado: ${Math.abs(quantity)}`,
+                );
+            }
+        } else if (location === 'Sangolqui') {
+            newSangolqui = (inventory.stockSangolqui || 0) + quantity;
+            if (newSangolqui < 0) {
+                throw new BadRequestException(
+                    `No hay suficiente stock en Sangolquí. Actual: ${inventory.stockSangolqui}, Solicitado: ${Math.abs(quantity)}`,
+                );
+            }
+        } else {
+            // Fallback for general stock update (legacy or unspecified location)
+            newStock = inventory.stock + quantity;
+            if (newStock < 0) {
+                throw new BadRequestException(
+                    `Cannot reduce stock below 0. Current: ${inventory.stock}, Requested change: ${quantity}`,
+                );
+            }
+        }
+
+        // Recalculate total if location was specified
+        if (location) {
+            newStock = (newZaruma || 0) + (newSangolqui || 0);
         }
 
         // Determine movement type
-        const type = updateStockDto.type ?? (updateStockDto.quantity > 0 ? MovementType.PURCHASE : MovementType.SALE);
+        const type = updateStockDto.type ?? (quantity > 0 ? MovementType.PURCHASE : MovementType.SALE);
 
         // Update stock and create movement in transaction
         const [updatedInventory] = await this.prisma.$transaction([
@@ -85,8 +113,10 @@ export class InventoryService {
                 where: { productId },
                 data: {
                     stock: newStock,
-                    lastRestocked: updateStockDto.quantity > 0 ? new Date() : undefined,
-                    lastSold: updateStockDto.quantity < 0 ? new Date() : undefined,
+                    stockZaruma: newZaruma,
+                    stockSangolqui: newSangolqui,
+                    lastRestocked: quantity > 0 ? new Date() : undefined,
+                    lastSold: quantity < 0 ? new Date() : undefined,
                 },
                 include: {
                     product: { select: { id: true, name: true } },
@@ -96,9 +126,9 @@ export class InventoryService {
                 data: {
                     inventoryId: inventory.id,
                     type,
-                    quantity: updateStockDto.quantity,
-                    reason: updateStockDto.reason,
-                    reference: updateStockDto.reference,
+                    quantity,
+                    reason: location ? `[${location}] ${reason || ''}` : reason,
+                    reference,
                     userId,
                 },
             }),
@@ -107,7 +137,7 @@ export class InventoryService {
         return {
             ...updatedInventory,
             previousStock: inventory.stock,
-            change: updateStockDto.quantity,
+            change: quantity,
         };
     }
 
@@ -236,6 +266,61 @@ export class InventoryService {
             outOfStock: outOfStockCount,
             lowStock: lowStockProducts,
             totalInventoryValue: totalValue[0]?.total ?? 0,
+        };
+    }
+    async getAllMovements(options?: {
+        type?: MovementType;
+        limit?: number;
+        offset?: number;
+        startDate?: Date;
+        endDate?: Date;
+    }) {
+        const { type, limit = 50, offset = 0, startDate, endDate } = options ?? {};
+
+        const where: any = {};
+        if (type) where.type = type;
+        if (startDate || endDate) {
+            where.createdAt = {};
+            if (startDate) where.createdAt.gte = startDate;
+            if (endDate) where.createdAt.lte = endDate;
+        }
+
+        const [movements, total] = await Promise.all([
+            this.prisma.inventoryMovement.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                skip: offset,
+                include: {
+                    inventory: {
+                        include: {
+                            product: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    price: true,
+                                    images: { take: 1 }
+                                }
+                            },
+                        },
+                    },
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true
+                        }
+                    },
+                },
+            }),
+            this.prisma.inventoryMovement.count({ where }),
+        ]);
+
+        return {
+            movements,
+            total,
+            page: Math.floor(offset / limit) + 1,
+            totalPages: Math.ceil(total / limit),
         };
     }
 }

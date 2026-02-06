@@ -45,6 +45,23 @@ export class InventoryController {
         return this.inventoryService.getLowStockAlerts();
     }
 
+    @Get('movements')
+    @ApiOperation({ summary: 'Get global movement history' })
+    @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'offset', required: false, type: Number })
+    @ApiQuery({ name: 'type', required: false })
+    getAllMovements(
+        @Query('limit') limit?: string,
+        @Query('offset') offset?: string,
+        @Query('type') type?: string,
+    ) {
+        return this.inventoryService.getAllMovements({
+            limit: limit ? parseInt(limit, 10) : undefined,
+            offset: offset ? parseInt(offset, 10) : undefined,
+            type: type as any,
+        });
+    }
+
     @Get('product/:productId')
     @ApiOperation({ summary: 'Get inventory for a product' })
     findByProduct(@Param('productId') productId: string) {
