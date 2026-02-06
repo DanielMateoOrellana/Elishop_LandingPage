@@ -9,9 +9,11 @@ import LandingPage from './pages/public/LandingPage';
 // Páginas Admin
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminLogin from './pages/admin/Login';
+import Dashboard from './pages/admin/Dashboard';
 import InventoryPage from './pages/admin/Inventory';
 import CategoriesPage from './pages/admin/Categories';
 import ProductsPage from './pages/admin/Products';
+import AccountingPage from './pages/admin/Accounting';
 
 // Estilos globales
 import './styles/index.css';
@@ -44,11 +46,12 @@ function App() {
                 <AdminLayout />
               </PrivateRoute>
             }>
-              <Route index element={<Navigate to="/admin/inventory" replace />} />
-              <Route path="dashboard" element={<div>Próximamente Dashboard</div>} />
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
               <Route path="products" element={<ProductsPage />} />
               <Route path="inventory" element={<InventoryPage />} />
               <Route path="categories" element={<CategoriesPage />} />
+              <Route path="accounting" element={<AccountingPage />} />
             </Route>
 
             {/* Fallback */}
