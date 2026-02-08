@@ -167,6 +167,19 @@ export class ProductsService {
             };
         }
 
+        // Lógica de imágenes
+        let imagesUpdate = undefined;
+        if (images) {
+            imagesUpdate = {
+                deleteMany: {},
+                create: Array.isArray(images) ? images.map((img: any, index: number) => ({
+                    url: img.url,
+                    alt: img.alt,
+                    sortOrder: index
+                })) : []
+            };
+        }
+
         return this.prisma.product.update({
             where: { id },
             data: {
@@ -177,6 +190,7 @@ export class ProductsService {
                 compareAtPrice: productData.compareAtPrice
                     ? new Prisma.Decimal(productData.compareAtPrice)
                     : undefined,
+                images: imagesUpdate,
                 inventory: inventoryUpdate,
             },
             include: {

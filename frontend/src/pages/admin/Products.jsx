@@ -60,23 +60,31 @@ const ProductsPage = () => {
         return text.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     };
 
-    const handleOpenModal = (product = null) => {
+    const handleOpenModal = async (product = null) => {
         if (product) {
-            setEditingProduct(product);
-            setFormData({
-                name: product.name,
-                slug: product.slug,
-                description: product.description || '',
-                price: product.price,
-                compareAtPrice: product.compareAtPrice || '',
-                categoryId: product.categoryId,
-                stockZaruma: product.inventory?.stockZaruma || 0,
-                stockSangolqui: product.inventory?.stockSangolqui || 0,
-                minStock: product.inventory?.minStock || 5,
-                images: product.images?.length > 0 ? product.images.map(img => ({ url: img.url })) : [{ url: '' }],
-                isActive: product.isActive,
-                isFeatured: product.isFeatured
-            });
+            try {
+                // Fetch full product details to get all images
+                const { data } = await api.get(`/products/${product.id}`);
+                setEditingProduct(data);
+                setFormData({
+                    name: data.name,
+                    slug: data.slug,
+                    description: data.description || '',
+                    price: data.price,
+                    compareAtPrice: data.compareAtPrice || '',
+                    categoryId: data.categoryId,
+                    stockZaruma: data.inventory?.stockZaruma || 0,
+                    stockSangolqui: data.inventory?.stockSangolqui || 0,
+                    minStock: data.inventory?.minStock || 5,
+                    images: data.images && data.images.length > 0 ? data.images : [{ url: '' }],
+                    isActive: data.isActive,
+                    isFeatured: data.isFeatured
+                });
+            } catch (error) {
+                console.error("Error fetching product details", error);
+                toast.error("Error al cargar detalles del producto");
+                return;
+            }
         } else {
             setEditingProduct(null);
             setFormData({
@@ -127,7 +135,15 @@ const ProductsPage = () => {
                 stockZaruma: parseInt(formData.stockZaruma),
                 stockSangolqui: parseInt(formData.stockSangolqui),
                 minStock: parseInt(formData.minStock),
-                images: formData.images.filter(img => img.url.trim() !== ''),
+                stockSangolqui: parseInt(formData.stockSangolqui),
+                minStock: parseInt(formData.minStock),
+                images: formData.images
+                    .filter(img => img.url.trim() !== '')
+                    .map(img => ({
+                        url: img.url,
+                        alt: img.alt,
+                        sortOrder: img.sortOrder
+                    })),
                 isActive: formData.isActive,
                 isFeatured: formData.isFeatured
             };
@@ -278,24 +294,58 @@ const ProductsPage = () => {
 
                         <form onSubmit={handleSubmit} className="modal-form">
                             <div className="form-scroll-area">
-                                <div className="image-upload-section">
-                                    <label className="image-preview-box">
-                                        {formData.images[0].url ? (
-                                            <img src={formData.images[0].url} alt="Preview" />
-                                        ) : (
-                                            <div className="placeholder">
-                                                <UploadCloud size={48} className="text-gray-500 mb-2" />
-                                                <span>Subir Imagen Principal</span>
+                                <div className="images-section">
+                                    <label className="section-label">Imágenes (Máx. 5)</label>
+                                    <div className="images-grid">
+                                        {formData.images.map((img, index) => (
+                                            <div key={index} className="image-slot">
+                                                <label className="image-preview-box">
+                                                    {img.url ? (
+                                                        <>
+                                                            <img src={img.url} alt={`Preview ${index}`} />
+                                                            <button
+                                                                type="button"
+                                                                className="remove-img-btn"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    const newImages = formData.images.filter((_, i) => i !== index);
+                                                                    setFormData({ ...formData, images: newImages });
+                                                                }}
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <div className="placeholder">
+                                                            <UploadCloud size={24} />
+                                                            <span>Subir</span>
+                                                        </div>
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        onChange={(e) => handleFileUpload(index, e.target.files[0])}
+                                                    />
+                                                </label>
                                             </div>
+                                        ))}
+
+                                        {formData.images.length < 5 && (
+                                            <button
+                                                type="button"
+                                                className="add-image-btn"
+                                                onClick={() => setFormData({
+                                                    ...formData,
+                                                    images: [...formData.images, { url: '' }]
+                                                })}
+                                            >
+                                                <Plus size={24} />
+                                                <span>Agregar</span>
+                                            </button>
                                         )}
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept="image/*"
-                                            onChange={(e) => handleFileUpload(0, e.target.files[0])}
-                                        />
-                                    </label>
-                                    <input type="hidden" value={formData.images[0].url} />
+                                    </div>
                                 </div>
 
                                 <div className="form-grid">
@@ -442,11 +492,44 @@ const ProductsPage = () => {
                 .modal-form { padding: 0; display: flex; flex-direction: column; flex: 1; min-height: 0; }
                 .form-scroll-area { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
                 .modal-actions { padding: 1.25rem 1.5rem; border-top: 1px solid #334155; background: #1e293b; display: flex; justify-content: flex-end; gap: 1rem; flex-shrink: 0; }
-                .image-upload-section { display: flex; justify-content: center; }
-                .image-preview-box { width: 100%; height: 180px; background: var(--admin-input-bg); border: 2px dashed var(--admin-border); border-radius: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; transition: all 0.2s; position: relative; color: var(--admin-text-muted); }
-                .image-preview-box:hover { border-color: var(--admin-accent); background: var(--admin-hover); color: var(--admin-accent); }
-                .image-preview-box img { width: 100%; height: 100%; object-fit: contain; }
-                .placeholder { display: flex; flex-direction: column; align-items: center; color: var(--admin-text-muted); font-size: 0.9rem; }
+                .images-section { display: flex; flex-direction: column; gap: 0.5rem; }
+                .section-label { color: var(--admin-text-muted); font-size: 0.85rem; font-weight: 500; }
+                .images-grid { display: flex; gap: 1rem; flex-wrap: wrap; }
+                
+                .image-slot { width: 100px; height: 100px; position: relative; }
+                .image-preview-box { 
+                    width: 100%; height: 100%; 
+                    background: var(--admin-input-bg); 
+                    border: 2px dashed var(--admin-border); 
+                    border-radius: 0.75rem; 
+                    display: flex; align-items: center; justify-content: center; 
+                    overflow: hidden; cursor: pointer; position: relative;
+                    transition: all 0.2s;
+                }
+                .image-preview-box:hover { border-color: var(--admin-accent); background: var(--admin-hover); }
+                .image-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+                
+                .placeholder { display: flex; flex-direction: column; align-items: center; color: var(--admin-text-muted); font-size: 0.75rem; gap: 0.25rem; }
+                
+                .remove-img-btn {
+                    position: absolute; top: 4px; right: 4px;
+                    background: rgba(0,0,0,0.6); color: white;
+                    border: none; border-radius: 50%; width: 20px; height: 20px;
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; z-index: 10;
+                }
+                .remove-img-btn:hover { background: #ef4444; }
+
+                .add-image-btn {
+                    width: 100px; height: 100px; 
+                    background: transparent; border: 2px dashed var(--admin-border);
+                    border-radius: 0.75rem; display: flex; flex-direction: column;
+                    align-items: center; justify-content: center; gap: 0.25rem;
+                    color: var(--admin-text-muted); font-size: 0.75rem; cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .add-image-btn:hover { border-color: var(--admin-accent); color: var(--admin-accent); background: var(--admin-hover); }
+
                 .hidden { display: none; }
                 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
                 .span-2 { grid-column: span 2; }

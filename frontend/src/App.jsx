@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 
 // Páginas Públicas
 import LandingPage from './pages/public/LandingPage';
+import ProductDetail from './pages/public/ProductDetail';
 
 // Páginas Admin
 import AdminLayout from './pages/admin/AdminLayout';
@@ -37,6 +38,7 @@ function App() {
           <Routes>
             {/* Ruta Pública (Landing Page) */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/producto/:slug" element={<ProductDetail />} />
 
             {/* Rutas Admin */}
             <Route path="/admin/login" element={<AdminLogin />} />

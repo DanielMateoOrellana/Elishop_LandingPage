@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api';
 import { useScrollAnimation, useStaggeredAnimation } from '../hooks/useScrollAnimation';
 
@@ -119,13 +120,18 @@ function ProductCard({ product, visible }) {
                 )}
             </div>
 
-            <div className="product-image">
-                <img src={imageUrl} alt={product.name} loading="lazy" />
-            </div>
+            <Link to={`/producto/${product.slug}`} className="product-image-link">
+                <div className="product-image">
+                    <img src={imageUrl} alt={product.name} loading="lazy" />
+                </div>
+            </Link>
 
             <div className="product-info">
                 <span className="product-category">{product.category?.name || 'Joyería'}</span>
-                <h3 className="product-name">{product.name}</h3>
+
+                <Link to={`/producto/${product.slug}`} className="product-title-link">
+                    <h3 className="product-name">{product.name}</h3>
+                </Link>
 
                 {/* Info Stock */}
                 <div className="stock-info">
@@ -296,6 +302,10 @@ function ProductCard({ product, visible }) {
                     transform: translateY(-2px);
                     box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
                 }
+
+                .product-image-link { display: block; text-decoration: none; color: inherit; }
+                .product-title-link { text-decoration: none; color: inherit; }
+                .product-title-link:hover .product-name { color: #ec4899; transition: color 0.2s; }
             `}</style>
         </div>
     );
