@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Package, FolderTree, LogOut, Menu, X, ShoppingBag, ReceiptText } from 'lucide-react';
+import { LayoutDashboard, Package, FolderTree, LogOut, Menu, X, ShoppingBag, ReceiptText, Video } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 import { useState } from 'react';
 
@@ -15,6 +15,7 @@ const AdminLayout = () => {
     { path: '/admin/inventory', icon: Package, label: 'Inventario' },
     { path: '/admin/categories', icon: FolderTree, label: 'Categorías' },
     { path: '/admin/accounting', icon: ReceiptText, label: 'Contabilidad' },
+    { path: '/admin/tiktok', icon: Video, label: 'TikToks' },
   ];
 
   return (

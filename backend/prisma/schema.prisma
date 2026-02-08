@@ -146,3 +146,15 @@ enum Role {
   ADMIN
   STAFF
 }
+
+// ========================================
+// CONFIGURACIÓN DE TIKTOK
+// ========================================
+model TikTokVideo {
+  id        String   @id @default(cuid())
+  url       String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

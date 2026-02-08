@@ -132,9 +132,6 @@ const ProductsPage = () => {
                 price: parseFloat(formData.price),
                 compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : null,
                 categoryId: formData.categoryId,
-                stockZaruma: parseInt(formData.stockZaruma),
-                stockSangolqui: parseInt(formData.stockSangolqui),
-                minStock: parseInt(formData.minStock),
                 stockSangolqui: parseInt(formData.stockSangolqui),
                 minStock: parseInt(formData.minStock),
                 images: formData.images

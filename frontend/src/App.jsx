@@ -15,6 +15,7 @@ import InventoryPage from './pages/admin/Inventory';
 import CategoriesPage from './pages/admin/Categories';
 import ProductsPage from './pages/admin/Products';
 import AccountingPage from './pages/admin/Accounting';
+import TikTokManager from './pages/admin/TikTokManager';
 
 // Estilos globales
 import './styles/index.css';
@@ -54,6 +55,7 @@ function App() {
               <Route path="inventory" element={<InventoryPage />} />
               <Route path="categories" element={<CategoriesPage />} />
               <Route path="accounting" element={<AccountingPage />} />
+              <Route path="tiktok" element={<TikTokManager />} />
             </Route>
 
             {/* Fallback */}

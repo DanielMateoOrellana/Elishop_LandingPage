@@ -13,6 +13,7 @@ import { CategoriesModule } from './categories';
 import { ProductsModule } from './products';
 import { InventoryModule } from './inventory';
 import { UploadsModule } from './uploads/uploads.module';
+import { TikTokModule } from './tiktok/tiktok.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { UploadsModule } from './uploads/uploads.module';
     ProductsModule,
     InventoryModule,
     UploadsModule,
+    TikTokModule,
   ],
   controllers: [AppController],
   providers: [
