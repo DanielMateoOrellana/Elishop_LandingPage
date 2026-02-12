@@ -1,4 +1,3 @@
-// Prisma Schema - Elishop Inventory System
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,9 +8,6 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ========================================
-// CATEGORÍAS
-// ========================================
 model Category {
   id          String    @id @default(cuid())
   name        String    @unique
@@ -22,97 +18,96 @@ model Category {
   image       String?
   isActive    Boolean   @default(true)
   sortOrder   Int       @default(0)
-  products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  products    Product[]
 }
 
-// ========================================
-// PRODUCTOS
-// ========================================
 model Product {
-  id              String    @id @default(cuid())
-  name            String
-  slug            String    @unique
-  description     String?
-  price           Decimal   @db.Decimal(10, 2)
-  compareAtPrice  Decimal?  @db.Decimal(10, 2) // Precio original (tachado)
-  
-  categoryId      String
-  category        Category  @relation(fields: [categoryId], references: [id])
-  images          ProductImage[]
-  inventory       Inventory?
-  
-  isActive        Boolean   @default(true)
-  isFeatured      Boolean   @default(false)
-  isNew           Boolean   @default(false)
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String         @id @default(cuid())
+  name           String
+  slug           String         @unique
+  description    String?
+  price          Decimal        @db.Decimal(10, 2)
+  compareAtPrice Decimal?       @db.Decimal(10, 2)
+  categoryId     String
+  isActive       Boolean        @default(true)
+  isFeatured     Boolean        @default(false)
+  isNew          Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  inventory      Inventory?
+  category       Category       @relation(fields: [categoryId], references: [id])
+  images         ProductImage[]
 
   @@index([categoryId])
   @@index([isActive, isFeatured])
 }
 
-// ========================================
-// IMÁGENES DE PRODUCTOS
-// ========================================
 model ProductImage {
   id        String   @id @default(cuid())
   url       String
   alt       String?
   sortOrder Int      @default(0)
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
 }
 
-// ========================================
-// INVENTARIO
-// ========================================
 model Inventory {
-  id            String    @id @default(cuid())
-  productId     String    @unique
-  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  stock         Int       @default(0) // Total Global
-  stockZaruma   Int       @default(0)
-  stockSangolqui Int      @default(0)
-  minStock      Int       @default(5)
-  maxStock      Int?
-  
-  lastRestocked DateTime?
-  lastSold      DateTime?
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  movements     InventoryMovement[]
+  id             String              @id @default(cuid())
+  productId      String              @unique
+  stock          Int                 @default(0)
+  minStock       Int                 @default(5)
+  maxStock       Int?
+  lastRestocked  DateTime?
+  lastSold       DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  stockSangolqui Int                 @default(0)
+  stockZaruma    Int                 @default(0)
+  product        Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  movements      InventoryMovement[]
 }
 
-// ========================================
-// MOVIMIENTOS DE INVENTARIO
-// ========================================
 model InventoryMovement {
-  id          String        @id @default(cuid())
+  id          String       @id @default(cuid())
   inventoryId String
-  inventory   Inventory     @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  
   type        MovementType
   quantity    Int
   reason      String?
   reference   String?
-  
   userId      String?
-  user        User?         @relation(fields: [userId], references: [id])
-  
-  createdAt   DateTime      @default(now())
+  createdAt   DateTime     @default(now())
+  inventory   Inventory    @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id])
 
   @@index([inventoryId])
   @@index([type])
   @@index([createdAt])
+}
+
+model User {
+  id        String              @id @default(cuid())
+  email     String              @unique
+  password  String
+  name      String
+  role      Role                @default(ADMIN)
+  isActive  Boolean             @default(true)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  movements InventoryMovement[]
+}
+
+model TikTokVideo {
+  id        String   @id @default(cuid())
+  url       String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum MovementType {
@@ -124,37 +119,8 @@ enum MovementType {
   TRANSFER
 }
 
-// ========================================
-// USUARIOS (Admin)
-// ========================================
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      Role     @default(ADMIN)
-  isActive  Boolean  @default(true)
-  
-  movements InventoryMovement[]
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 enum Role {
   SUPER_ADMIN
   ADMIN
   STAFF
-}
-
-// ========================================
-// CONFIGURACIÓN DE TIKTOK
-// ========================================
-model TikTokVideo {
-  id        String   @id @default(cuid())
-  url       String
-  sortOrder Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
