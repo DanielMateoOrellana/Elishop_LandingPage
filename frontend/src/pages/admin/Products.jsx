@@ -132,8 +132,9 @@ const ProductsPage = () => {
                 price: parseFloat(formData.price),
                 compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : null,
                 categoryId: formData.categoryId,
-                stockSangolqui: parseInt(formData.stockSangolqui),
-                minStock: parseInt(formData.minStock),
+                stockZaruma: parseInt(formData.stockZaruma) || 0,
+                stockSangolqui: parseInt(formData.stockSangolqui) || 0,
+                minStock: parseInt(formData.minStock) || 0,
                 images: formData.images
                     .filter(img => img.url.trim() !== '')
                     .map(img => ({
