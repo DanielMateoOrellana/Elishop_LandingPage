@@ -28,7 +28,7 @@ const Dashboard = () => {
         try {
             setLoading(true);
             const [productsRes, movementsRes] = await Promise.all([
-                api.get('/products'),
+                api.get('/products?limit=1000'),
                 api.get('/inventory/movements?limit=100')
             ]);
 

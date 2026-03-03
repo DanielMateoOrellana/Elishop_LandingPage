@@ -43,7 +43,7 @@ const ProductsPage = () => {
         try {
             setLoading(true);
             const [productsRes, categoriesRes] = await Promise.all([
-                api.get('/products'),
+                api.get('/products?limit=1000'),
                 api.get('/categories')
             ]);
             setProducts(productsRes.data.data || []);

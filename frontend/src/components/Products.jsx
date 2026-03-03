@@ -15,7 +15,7 @@ export default function Products() {
         const fetchProducts = async () => {
             try {
                 // Traer productos activos
-                const { data } = await api.get('/products?active=true&limit=12');
+                const { data } = await api.get('/products?active=true&limit=200');
                 // La API devuelve paginación { data: [], meta: ... }
                 setProducts(data.data || []);
             } catch (error) {
