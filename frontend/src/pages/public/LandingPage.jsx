@@ -19,7 +19,6 @@ const LandingPage = () => {
             <Products />
             <Categories />
             <CTA />
-            <InfoSection />
             <TikTokFeed />
             <Contact />
             <Footer />
