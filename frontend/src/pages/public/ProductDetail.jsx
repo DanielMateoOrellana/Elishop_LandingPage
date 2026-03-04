@@ -7,9 +7,7 @@ import {
     ShoppingCart,
     MessageCircle,
     ArrowLeft,
-    Package,
-    ShieldCheck,
-    Truck
+    Package
 } from 'lucide-react';
 
 const ProductDetail = () => {
@@ -211,22 +209,6 @@ const ProductDetail = () => {
                         </button>
                     </div>
 
-                    <div className="features-grid">
-                        <div className="feature-item">
-                            <ShieldCheck size={20} className="icon" />
-                            <div>
-                                <h4>Garantía de Calidad</h4>
-                                <p>Productos verificados</p>
-                            </div>
-                        </div>
-                        <div className="feature-item">
-                            <Truck size={20} className="icon" />
-                            <div>
-                                <h4>Envíos a todo el país</h4>
-                                <p>Seguro y rápido</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -455,18 +437,6 @@ const ProductDetail = () => {
                 .whatsapp-btn:hover:not(:disabled) { background: #22c35e; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4); }
                 .whatsapp-btn:disabled { background: var(--gray); cursor: not-allowed; box-shadow: none; opacity: 0.7; }
 
-                .features-grid {
-                    display: grid;
-                    grid-template-columns: 1fr;
-                    gap: 1.5rem;
-                    border-top: 1px solid #e2e8f0;
-                    padding-top: 2rem;
-                }
-                .feature-item { display: flex; gap: 1rem; align-items:  flex-start; }
-                .feature-item .icon { color: var(--primary); margin-top: 2px; }
-                .feature-item h4 { font-weight: 600; margin-bottom: 0.25rem; font-size: 0.95rem; }
-                .feature-item p { font-size: 0.85rem; color: var(--gray); margin: 0; }
-
                 @media (max-width: 900px) {
                     .detail-container { grid-template-columns: 1fr; gap: 2rem; }
                     .product-gallery { position: static; }
@@ -482,7 +452,7 @@ const ProductDetail = () => {
                 }
                 .btn-link { color: var(--primary); text-decoration: underline; cursor: pointer; }
             `}</style>
-        </div>
+        </div >
     );
 };
 
