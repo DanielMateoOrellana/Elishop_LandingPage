@@ -4,7 +4,6 @@ import About from '../../components/About';
 import Products from '../../components/Products';
 import Categories from '../../components/Categories';
 import CTA from '../../components/CTA';
-import InfoSection from '../../components/InfoSection';
 import TikTokFeed from '../../components/TikTokFeed';
 import Contact from '../../components/Contact';
 import Footer from '../../components/Footer';
