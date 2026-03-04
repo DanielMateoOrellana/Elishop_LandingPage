@@ -62,7 +62,8 @@ const ProductDetail = () => {
 
         const phone = "593967074437";
         const locationName = selectedLocation === 'Sangolqui' ? 'Sangolquí' : selectedLocation;
-        const message = `Hola, me interesa comprar: *${product.name}* \nPrecio: $${product.price} \nCantidad: ${quantity} \nDesde Bodega: *${locationName}*`;
+        const productUrl = `${window.location.origin}/producto/${product.slug}`;
+        const message = `Hola, me interesa comprar: *${product.name}* \nPrecio: $${product.price} \nCantidad: ${quantity} \nDesde Bodega: *${locationName}*\n🔗 Ver producto: ${productUrl}`;
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
     };
 

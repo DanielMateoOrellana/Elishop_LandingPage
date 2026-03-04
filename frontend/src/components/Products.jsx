@@ -94,7 +94,8 @@ function ProductCard({ product, visible }) {
     const imageUrl = product.images?.[0]?.url || 'https://placehold.co/400x400/1e1e1e/white?text=Sin+Imagen';
 
     // Crear mensaje de WhatsApp
-    const message = `Hola! Me interesa el producto: ${product.name} (Precio: $${Number(product.price).toFixed(2)})`;
+    const productUrl = `${window.location.origin}/producto/${product.slug}`;
+    const message = `Hola! Me interesa el producto: ${product.name} (Precio: $${Number(product.price).toFixed(2)})\n🔗 Ver producto: ${productUrl}`;
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 
     // Calcular descuento
