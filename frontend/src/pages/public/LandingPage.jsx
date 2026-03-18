@@ -1,8 +1,6 @@
 import Navbar from '../../components/Navbar';
-import Hero from '../../components/Hero';
+import CatalogScroll from '../../components/CatalogScroll';
 import About from '../../components/About';
-import Products from '../../components/Products';
-import Categories from '../../components/Categories';
 import CTA from '../../components/CTA';
 import TikTokFeed from '../../components/TikTokFeed';
 import Contact from '../../components/Contact';
@@ -13,10 +11,8 @@ const LandingPage = () => {
     return (
         <>
             <Navbar />
-            <Hero />
+            <CatalogScroll />
             <About />
-            <Products />
-            <Categories />
             <CTA />
             <TikTokFeed />
             <Contact />
