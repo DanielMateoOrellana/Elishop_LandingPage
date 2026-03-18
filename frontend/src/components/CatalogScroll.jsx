@@ -148,11 +148,13 @@ export default function CatalogScroll() {
 
                 /* Contenedor horizontal de categorías */
                 .categories-horizontal-container {
-                    display: flex;
-                    gap: 3rem;
+                    display: grid;
+                    grid-auto-flow: column;
+                    grid-auto-columns: minmax(350px, 1fr);
+                    gap: 2rem;
                     padding: 2rem;
                     overflow-x: auto;
-                    scroll-snap-type: x mandatory;
+                    scroll-behavior: smooth;
                     scrollbar-width: thin;
                     scrollbar-color: #ec4899 rgba(255, 255, 255, 0.3);
                     position: relative;
@@ -177,8 +179,6 @@ export default function CatalogScroll() {
 
                 /* Sección de cada categoría */
                 .category-section {
-                    min-width: 90vw;
-                    scroll-snap-align: center;
                     display: flex;
                     flex-direction: column;
                     gap: 1.5rem;
@@ -187,7 +187,7 @@ export default function CatalogScroll() {
                 /* Header de categoría */
                 .category-header {
                     background: white;
-                    padding: 2rem;
+                    padding: 1.5rem;
                     border-radius: 1.5rem;
                     text-align: center;
                     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
@@ -195,33 +195,34 @@ export default function CatalogScroll() {
                 }
 
                 .category-icon-large {
-                    font-size: 4rem;
+                    font-size: 3rem;
                     display: block;
-                    margin-bottom: 1rem;
+                    margin-bottom: 0.75rem;
                     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
                 }
 
                 .category-name {
-                    font-size: 2.5rem;
+                    font-size: 1.5rem;
                     font-weight: 800;
                     color: #831843;
                     margin-bottom: 0.5rem;
                 }
 
                 .category-description {
-                    font-size: 1.1rem;
+                    font-size: 0.9rem;
                     color: #9f1239;
                     margin-bottom: 0.75rem;
+                    line-height: 1.4;
                 }
 
                 .category-product-count {
                     display: inline-block;
                     background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
                     color: white;
-                    padding: 0.5rem 1.5rem;
+                    padding: 0.4rem 1rem;
                     border-radius: 9999px;
                     font-weight: 700;
-                    font-size: 1rem;
+                    font-size: 0.85rem;
                     box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
                 }
 
@@ -314,30 +315,37 @@ export default function CatalogScroll() {
                         font-size: 1rem;
                     }
 
-                    .category-section {
-                        min-width: 95vw;
+                    .categories-horizontal-container {
+                        grid-auto-columns: minmax(280px, 1fr);
+                        padding: 1rem;
+                        gap: 1rem;
                     }
 
                     .category-header {
-                        padding: 1.5rem;
+                        padding: 1rem;
                     }
 
                     .category-name {
-                        font-size: 2rem;
+                        font-size: 1.25rem;
                     }
 
                     .category-icon-large {
-                        font-size: 3rem;
+                        font-size: 2.5rem;
+                    }
+
+                    .category-description {
+                        font-size: 0.8rem;
                     }
 
                     .product-card {
-                        min-width: 280px;
-                        max-width: 280px;
+                        min-width: 250px;
+                        max-width: 250px;
                     }
+                }
 
+                @media (min-width: 769px) and (max-width: 1200px) {
                     .categories-horizontal-container {
-                        padding: 1rem;
-                        gap: 2rem;
+                        grid-auto-columns: minmax(300px, 1fr);
                     }
                 }
             `}</style>
