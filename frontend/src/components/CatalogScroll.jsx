@@ -52,6 +52,14 @@ export default function CatalogScroll() {
         );
     }
 
+    // Aplanar todos los productos en un solo array
+    const allProducts = categories.flatMap(category =>
+        (productsByCategory[category.id] || []).map(product => ({
+            ...product,
+            categoryInfo: category
+        }))
+    );
+
     return (
         <section className="catalog-scroll" id="catalog">
             {/* Cabecera del catálogo */}
@@ -59,37 +67,47 @@ export default function CatalogScroll() {
                 <h1 className="catalog-title">
                     Nuestro <span className="gradient-text">Catálogo</span>
                 </h1>
-                <p className="catalog-subtitle">Desliza horizontalmente para explorar nuestras categorías</p>
+                <p className="catalog-subtitle">Desliza horizontalmente para explorar todos nuestros productos</p>
             </div>
 
-            {/* Scroll horizontal de categorías con sus productos */}
-            <div className="categories-horizontal-container">
+            {/* Filtros de categorías */}
+            <div className="categories-filter">
+                <button
+                    className={`category-filter-btn ${selectedCategory === null ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(null)}
+                >
+                    Todos
+                </button>
                 {categories.map(category => (
-                    <div key={category.id} className="category-section">
-                        {/* Header de la categoría */}
-                        <div className="category-header" style={{ '--accent-color': category.color }}>
-                            <span className="category-icon-large">{category.icon}</span>
-                            <h2 className="category-name">{category.name}</h2>
-                            <p className="category-description">{category.description}</p>
-                            <span className="category-product-count">
-                                {productsByCategory[category.id]?.length || 0} productos
-                            </span>
-                        </div>
-
-                        {/* Productos de la categoría en horizontal */}
-                        <div className="products-horizontal-scroll">
-                            {productsByCategory[category.id]?.length > 0 ? (
-                                productsByCategory[category.id].map(product => (
-                                    <ProductCard key={product.id} product={product} />
-                                ))
-                            ) : (
-                                <div className="empty-category">
-                                    <p>No hay productos en esta categoría</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <button
+                        key={category.id}
+                        className={`category-filter-btn ${selectedCategory === category.id ? 'active' : ''}`}
+                        onClick={() => setSelectedCategory(category.id)}
+                        style={{ '--accent-color': category.color }}
+                    >
+                        <span className="filter-icon">{category.icon}</span>
+                        {category.name}
+                    </button>
                 ))}
+            </div>
+
+            {/* Scroll horizontal único de todos los productos */}
+            <div className="products-horizontal-container">
+                {(selectedCategory === null
+                    ? allProducts
+                    : allProducts.filter(p => p.categoryId === selectedCategory)
+                ).length > 0 ? (
+                    (selectedCategory === null
+                        ? allProducts
+                        : allProducts.filter(p => p.categoryId === selectedCategory)
+                    ).map(product => (
+                        <ProductCard key={product.id} product={product} />
+                    ))
+                ) : (
+                    <div className="empty-catalog">
+                        <p>No hay productos disponibles</p>
+                    </div>
+                )}
             </div>
 
             <style>{`
@@ -146,11 +164,71 @@ export default function CatalogScroll() {
                     filter: drop-shadow(0 2px 4px rgba(236, 72, 153, 0.3));
                 }
 
-                /* Contenedor horizontal de categorías */
-                .categories-horizontal-container {
-                    display: grid;
-                    grid-auto-flow: column;
-                    grid-auto-columns: minmax(350px, 1fr);
+                /* Filtros de categorías */
+                .categories-filter {
+                    display: flex;
+                    gap: 1rem;
+                    padding: 1rem 2rem;
+                    overflow-x: auto;
+                    scrollbar-width: thin;
+                    scrollbar-color: #ec4899 rgba(255, 255, 255, 0.3);
+                    position: relative;
+                    z-index: 1;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+
+                .categories-filter::-webkit-scrollbar {
+                    height: 8px;
+                }
+
+                .categories-filter::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.3);
+                    border-radius: 10px;
+                }
+
+                .categories-filter::-webkit-scrollbar-thumb {
+                    background: #ec4899;
+                    border-radius: 10px;
+                }
+
+                .category-filter-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.75rem 1.5rem;
+                    background: white;
+                    border: 2px solid transparent;
+                    border-radius: 9999px;
+                    color: #831843;
+                    font-weight: 600;
+                    font-size: 0.95rem;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                    white-space: nowrap;
+                }
+
+                .category-filter-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(236, 72, 153, 0.3);
+                    border-color: #fbcfe8;
+                }
+
+                .category-filter-btn.active {
+                    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+                    color: white;
+                    border-color: #be185d;
+                    box-shadow: 0 8px 30px rgba(236, 72, 153, 0.5);
+                }
+
+                .filter-icon {
+                    font-size: 1.2rem;
+                }
+
+                /* Contenedor horizontal de productos */
+                .products-horizontal-container {
+                    display: flex;
                     gap: 2rem;
                     padding: 2rem;
                     overflow-x: auto;
@@ -161,93 +239,20 @@ export default function CatalogScroll() {
                     z-index: 1;
                 }
 
-                .categories-horizontal-container::-webkit-scrollbar {
+                .products-horizontal-container::-webkit-scrollbar {
                     height: 12px;
                 }
 
-                .categories-horizontal-container::-webkit-scrollbar-track {
+                .products-horizontal-container::-webkit-scrollbar-track {
                     background: rgba(255, 255, 255, 0.3);
                     border-radius: 10px;
                     margin: 0 2rem;
                 }
 
-                .categories-horizontal-container::-webkit-scrollbar-thumb {
+                .products-horizontal-container::-webkit-scrollbar-thumb {
                     background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
                     border-radius: 10px;
                     box-shadow: 0 2px 10px rgba(236, 72, 153, 0.4);
-                }
-
-                /* Sección de cada categoría */
-                .category-section {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1.5rem;
-                }
-
-                /* Header de categoría */
-                .category-header {
-                    background: white;
-                    padding: 1.5rem;
-                    border-radius: 1.5rem;
-                    text-align: center;
-                    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-                    border: 3px solid var(--accent-color, #ec4899);
-                }
-
-                .category-icon-large {
-                    font-size: 3rem;
-                    display: block;
-                    margin-bottom: 0.75rem;
-                    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-                }
-
-                .category-name {
-                    font-size: 1.5rem;
-                    font-weight: 800;
-                    color: #831843;
-                    margin-bottom: 0.5rem;
-                }
-
-                .category-description {
-                    font-size: 0.9rem;
-                    color: #9f1239;
-                    margin-bottom: 0.75rem;
-                    line-height: 1.4;
-                }
-
-                .category-product-count {
-                    display: inline-block;
-                    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-                    color: white;
-                    padding: 0.4rem 1rem;
-                    border-radius: 9999px;
-                    font-weight: 700;
-                    font-size: 0.85rem;
-                    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
-                }
-
-                /* Scroll horizontal de productos */
-                .products-horizontal-scroll {
-                    display: flex;
-                    gap: 1.5rem;
-                    overflow-x: auto;
-                    padding: 1rem 0.5rem;
-                    scrollbar-width: thin;
-                    scrollbar-color: #ec4899 rgba(255, 255, 255, 0.3);
-                }
-
-                .products-horizontal-scroll::-webkit-scrollbar {
-                    height: 8px;
-                }
-
-                .products-horizontal-scroll::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.3);
-                    border-radius: 10px;
-                }
-
-                .products-horizontal-scroll::-webkit-scrollbar-thumb {
-                    background: #ec4899;
-                    border-radius: 10px;
                 }
 
                 @keyframes fadeIn {
@@ -261,19 +266,17 @@ export default function CatalogScroll() {
                     }
                 }
 
-                .empty-category {
+                .empty-catalog {
                     text-align: center;
-                    padding: 3rem 2rem;
+                    padding: 4rem 2rem;
                     background: white;
                     border-radius: 1.5rem;
                     color: #9f1239;
-                    font-size: 1.2rem;
+                    font-size: 1.3rem;
                     font-weight: 600;
                     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-                    min-width: 320px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                    width: 100%;
+                    margin: 0 auto;
                 }
 
                 .catalog-loading {
@@ -315,37 +318,29 @@ export default function CatalogScroll() {
                         font-size: 1rem;
                     }
 
-                    .categories-horizontal-container {
-                        grid-auto-columns: minmax(280px, 1fr);
+                    .categories-filter {
                         padding: 1rem;
-                        gap: 1rem;
+                        gap: 0.75rem;
+                        justify-content: flex-start;
                     }
 
-                    .category-header {
+                    .category-filter-btn {
+                        padding: 0.6rem 1.25rem;
+                        font-size: 0.9rem;
+                    }
+
+                    .filter-icon {
+                        font-size: 1rem;
+                    }
+
+                    .products-horizontal-container {
                         padding: 1rem;
-                    }
-
-                    .category-name {
-                        font-size: 1.25rem;
-                    }
-
-                    .category-icon-large {
-                        font-size: 2.5rem;
-                    }
-
-                    .category-description {
-                        font-size: 0.8rem;
+                        gap: 1.5rem;
                     }
 
                     .product-card {
-                        min-width: 250px;
-                        max-width: 250px;
-                    }
-                }
-
-                @media (min-width: 769px) and (max-width: 1200px) {
-                    .categories-horizontal-container {
-                        grid-auto-columns: minmax(300px, 1fr);
+                        min-width: 280px;
+                        max-width: 280px;
                     }
                 }
             `}</style>
