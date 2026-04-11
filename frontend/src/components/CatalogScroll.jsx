@@ -17,8 +17,7 @@ function slugify(value) {
 
 function getVisibleCount() {
     if (typeof window === 'undefined') return 3;
-    if (window.innerWidth < 640) return 1;
-    if (window.innerWidth < 1100) return 2;
+    if (window.innerWidth < 900) return 2;
     return 3;
 }
 
@@ -28,6 +27,10 @@ function buildGroupedProducts(categories, products) {
         grouped[category.id] = products.filter((product) => product.categoryId === category.id);
     });
     return grouped;
+}
+
+function getTotalStock(product) {
+    return (product.inventory?.stockZaruma || 0) + (product.inventory?.stockSangolqui || 0);
 }
 
 function createFallbackCatalog() {
@@ -48,7 +51,7 @@ function createFallbackCatalog() {
             const dynamicCategory = {
                 id: slugify(product.category),
                 name: product.category,
-                icon: '🎀',
+                icon: '*',
                 color: '#ec4899',
             };
             categoryByName.set(key, dynamicCategory);
@@ -63,6 +66,7 @@ function createFallbackCatalog() {
             id: `fallback-${product.id ?? index}`,
             name: product.name,
             slug: slugify(product.name),
+            description: product.description || '',
             price: 18.99 + index,
             compareAtPrice: product.featured ? 24.99 + index : null,
             categoryId: category.id,
@@ -82,43 +86,79 @@ function createFallbackCatalog() {
     };
 }
 
+const FALLBACK_CATALOG = createFallbackCatalog();
+
+function sortProducts(products, sortBy) {
+    const sortedProducts = [...products];
+
+    switch (sortBy) {
+        case 'price-asc':
+            return sortedProducts.sort((a, b) => Number(a.price) - Number(b.price));
+        case 'price-desc':
+            return sortedProducts.sort((a, b) => Number(b.price) - Number(a.price));
+        case 'stock-desc':
+            return sortedProducts.sort((a, b) => getTotalStock(b) - getTotalStock(a));
+        case 'stock-asc':
+            return sortedProducts.sort((a, b) => getTotalStock(a) - getTotalStock(b));
+        default:
+            return sortedProducts.sort((a, b) => {
+                if (Boolean(b.isFeatured) !== Boolean(a.isFeatured)) {
+                    return Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured));
+                }
+
+                return Number(a.price) - Number(b.price);
+            });
+    }
+}
+
 export default function CatalogScroll() {
-    const [categories, setCategories] = useState([]);
-    const [productsByCategory, setProductsByCategory] = useState({});
-    const [loading, setLoading] = useState(true);
-    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [categories, setCategories] = useState(() => FALLBACK_CATALOG.categories);
+    const [productsByCategory, setProductsByCategory] = useState(() =>
+        buildGroupedProducts(FALLBACK_CATALOG.categories, FALLBACK_CATALOG.products),
+    );
+    const [selectedCategory, setSelectedCategory] = useState(() => FALLBACK_CATALOG.categories[0]?.id ?? null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [visibleCount, setVisibleCount] = useState(getVisibleCount);
+    const [sortBy, setSortBy] = useState('featured');
+    const [stockFilter, setStockFilter] = useState('all');
+    const [isSyncing, setIsSyncing] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
+
         const fetchData = async () => {
             try {
                 const { data: categoriesData } = await api.get('/categories');
                 const { data: productsResponse } = await api.get('/products?active=true&limit=200');
                 const liveProducts = productsResponse.data || [];
 
+                if (!isMounted) {
+                    return;
+                }
+
                 if (categoriesData.length > 0 && liveProducts.length > 0) {
                     setCategories(categoriesData);
                     setProductsByCategory(buildGroupedProducts(categoriesData, liveProducts));
-                    setSelectedCategory(categoriesData[0].id);
-                } else {
-                    const fallbackCatalog = createFallbackCatalog();
-                    setCategories(fallbackCatalog.categories);
-                    setProductsByCategory(buildGroupedProducts(fallbackCatalog.categories, fallbackCatalog.products));
-                    setSelectedCategory(fallbackCatalog.categories[0]?.id ?? null);
+                    setSelectedCategory((previousCategory) =>
+                        categoriesData.some((category) => category.id === previousCategory)
+                            ? previousCategory
+                            : (categoriesData[0]?.id ?? null),
+                    );
                 }
             } catch (error) {
                 console.error('Error fetching catalog data:', error);
-                const fallbackCatalog = createFallbackCatalog();
-                setCategories(fallbackCatalog.categories);
-                setProductsByCategory(buildGroupedProducts(fallbackCatalog.categories, fallbackCatalog.products));
-                setSelectedCategory(fallbackCatalog.categories[0]?.id ?? null);
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setIsSyncing(false);
+                }
             }
         };
 
         fetchData();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     useEffect(() => {
@@ -132,16 +172,7 @@ export default function CatalogScroll() {
 
     useEffect(() => {
         setCurrentIndex(0);
-    }, [selectedCategory, visibleCount]);
-
-    if (loading) {
-        return (
-            <div className="catalog-loading">
-                <div className="spinner"></div>
-                <p>Cargando catalogo...</p>
-            </div>
-        );
-    }
+    }, [selectedCategory, visibleCount, sortBy, stockFilter]);
 
     const allProducts = categories.flatMap((category) =>
         (productsByCategory[category.id] || []).map((product) => ({
@@ -150,10 +181,21 @@ export default function CatalogScroll() {
         })),
     );
 
-    const displayedProducts = selectedCategory === null
+    const categoryProducts = selectedCategory === null
         ? allProducts
         : allProducts.filter((product) => product.categoryId === selectedCategory);
 
+    const stockFilteredProducts = categoryProducts.filter((product) => {
+        const totalStock = getTotalStock(product);
+
+        if (stockFilter === 'in-stock') return totalStock > 0;
+        if (stockFilter === 'low-stock') return totalStock > 0 && totalStock <= 4;
+        if (stockFilter === 'out-of-stock') return totalStock === 0;
+
+        return true;
+    });
+
+    const displayedProducts = sortProducts(stockFilteredProducts, sortBy);
     const maxIndex = Math.max(0, displayedProducts.length - visibleCount);
     const visibleProducts = displayedProducts.slice(currentIndex, currentIndex + visibleCount);
     const visibleColumns = Math.max(1, Math.min(visibleCount, visibleProducts.length || visibleCount));
@@ -172,7 +214,8 @@ export default function CatalogScroll() {
                 <h1 className="catalog-title">
                     Nuestro <span className="catalog-accent">Catalogo</span>
                 </h1>
-                <p className="catalog-subtitle">Usa las flechas para recorrer nuestros productos destacados.</p>
+                <p className="catalog-subtitle">Explora nuestras tarjetitas y ordena por precio o stock en segundos.</p>
+                {isSyncing ? <p className="catalog-status">Actualizando productos...</p> : null}
             </div>
 
             <div className="categories-filter">
@@ -188,64 +231,89 @@ export default function CatalogScroll() {
                         className={`category-filter-btn ${selectedCategory === category.id ? 'active' : ''}`}
                         onClick={() => setSelectedCategory(category.id)}
                     >
-                        <span className="filter-icon">{category.icon}</span>
+                        {category.icon ? <span className="filter-icon">{category.icon}</span> : null}
                         {category.name}
                     </button>
                 ))}
             </div>
 
-            <div className="products-carousel-shell">
-                <button
-                    type="button"
-                    className={`carousel-arrow ${currentIndex === 0 ? 'disabled' : ''}`}
-                    onClick={goToPrevious}
-                    disabled={currentIndex === 0}
-                    aria-label="Ver productos anteriores"
-                >
-                    <ChevronLeft size={28} />
-                </button>
+            <div className="catalog-tools">
+                <label className="tool-group">
+                    <span>Ordenar</span>
+                    <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+                        <option value="featured">Recomendados</option>
+                        <option value="price-asc">Precio mas bajo</option>
+                        <option value="price-desc">Precio mas alto</option>
+                        <option value="stock-desc">Mayor stock</option>
+                        <option value="stock-asc">Menor stock</option>
+                    </select>
+                </label>
 
-                <div className="products-carousel-stage">
-                    {displayedProducts.length > 0 ? (
-                        <>
+                <label className="tool-group">
+                    <span>Stock</span>
+                    <select value={stockFilter} onChange={(event) => setStockFilter(event.target.value)}>
+                        <option value="all">Todos</option>
+                        <option value="in-stock">Solo disponibles</option>
+                        <option value="low-stock">Stock bajo</option>
+                        <option value="out-of-stock">Agotados</option>
+                    </select>
+                </label>
+            </div>
+
+            <div className="products-carousel-shell">
+                {displayedProducts.length > 0 ? (
+                    <>
+                        <div className="products-carousel-head">
                             <div className="products-carousel-meta">
                                 <span>
                                     Mostrando {Math.min(currentIndex + 1, displayedProducts.length)} - {Math.min(currentIndex + visibleCount, displayedProducts.length)} de {displayedProducts.length}
                                 </span>
                             </div>
 
-                            <div
-                                className="products-grid"
-                                style={{ gridTemplateColumns: `repeat(${visibleColumns}, minmax(0, 1fr))` }}
-                            >
-                                {visibleProducts.map((product) => (
-                                    <ProductCard key={product.id} product={product} />
-                                ))}
-                            </div>
-                        </>
-                    ) : (
-                        <div className="empty-catalog">
-                            <p>No hay productos disponibles</p>
-                        </div>
-                    )}
-                </div>
+                            <div className="carousel-arrow-group" aria-label="Controles del carrusel">
+                                <button
+                                    type="button"
+                                    className={`carousel-arrow ${currentIndex === 0 ? 'disabled' : ''}`}
+                                    onClick={goToPrevious}
+                                    disabled={currentIndex === 0}
+                                    aria-label="Ver productos anteriores"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
 
-                <button
-                    type="button"
-                    className={`carousel-arrow ${currentIndex >= maxIndex ? 'disabled' : ''}`}
-                    onClick={goToNext}
-                    disabled={currentIndex >= maxIndex}
-                    aria-label="Ver productos siguientes"
-                >
-                    <ChevronRight size={28} />
-                </button>
+                                <button
+                                    type="button"
+                                    className={`carousel-arrow ${currentIndex >= maxIndex ? 'disabled' : ''}`}
+                                    onClick={goToNext}
+                                    disabled={currentIndex >= maxIndex}
+                                    aria-label="Ver productos siguientes"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div
+                            className="products-grid"
+                            style={{ gridTemplateColumns: `repeat(${visibleColumns}, minmax(0, 1fr))` }}
+                        >
+                            {visibleProducts.map((product) => (
+                                <ProductCard key={product.id} product={product} />
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <div className="empty-catalog">
+                        <p>No hay productos para ese filtro.</p>
+                    </div>
+                )}
             </div>
 
             <style>{`
                 .catalog-scroll {
                     min-height: 100vh;
                     background: linear-gradient(180deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%);
-                    padding: 6.5rem 0 3rem;
+                    padding: 6rem 0 3rem;
                     position: relative;
                     overflow: hidden;
                 }
@@ -262,20 +330,20 @@ export default function CatalogScroll() {
 
                 .catalog-header {
                     text-align: center;
-                    padding: 0 2rem 1.5rem;
-                    max-width: 800px;
+                    padding: 0 1rem 1rem;
+                    max-width: 840px;
                     margin: 0 auto;
                     position: relative;
                     z-index: 1;
                 }
 
                 .catalog-title {
-                    font-size: 3.5rem;
+                    font-size: 3.35rem;
                     font-weight: 900;
                     color: #d61f69;
-                    margin-bottom: 1rem;
-                    line-height: 1.2;
-                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+                    margin-bottom: 0.85rem;
+                    line-height: 1.05;
+                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.08);
                 }
 
                 .catalog-accent {
@@ -283,15 +351,22 @@ export default function CatalogScroll() {
                 }
 
                 .catalog-subtitle {
-                    font-size: 1.05rem;
+                    font-size: 1rem;
                     color: #9f1239;
                     font-weight: 500;
                 }
 
+                .catalog-status {
+                    margin-top: 0.7rem;
+                    color: #be185d;
+                    font-size: 0.84rem;
+                    font-weight: 700;
+                }
+
                 .categories-filter {
                     display: flex;
-                    gap: 1rem;
-                    padding: 1rem 2rem;
+                    gap: 0.85rem;
+                    padding: 1rem 1rem 0.75rem;
                     overflow-x: auto;
                     position: relative;
                     z-index: 1;
@@ -302,23 +377,23 @@ export default function CatalogScroll() {
                 .category-filter-btn {
                     display: flex;
                     align-items: center;
-                    gap: 0.5rem;
-                    padding: 0.75rem 1.5rem;
-                    background: white;
+                    gap: 0.45rem;
+                    padding: 0.7rem 1.2rem;
+                    background: rgba(255, 255, 255, 0.96);
                     border: 2px solid transparent;
                     border-radius: 9999px;
                     color: #831843;
                     font-weight: 600;
                     font-size: 0.95rem;
                     cursor: pointer;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                    transition: all 0.25s ease;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
                     white-space: nowrap;
                 }
 
                 .category-filter-btn:hover {
                     transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(236, 72, 153, 0.3);
+                    box-shadow: 0 8px 25px rgba(236, 72, 153, 0.24);
                     border-color: #fbcfe8;
                 }
 
@@ -326,51 +401,94 @@ export default function CatalogScroll() {
                     background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
                     color: white;
                     border-color: #be185d;
-                    box-shadow: 0 8px 30px rgba(236, 72, 153, 0.5);
+                    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.38);
                 }
 
                 .filter-icon {
-                    font-size: 1.2rem;
+                    font-size: 1rem;
                 }
 
-                .products-carousel-shell {
-                    display: grid;
-                    grid-template-columns: auto minmax(0, 1fr) auto;
-                    gap: 1rem;
-                    align-items: center;
-                    padding: 1.5rem 2rem 0;
-                    max-width: 1380px;
+                .catalog-tools {
+                    max-width: 1120px;
                     margin: 0 auto;
+                    padding: 0.65rem 1rem 0;
+                    display: flex;
+                    justify-content: center;
+                    gap: 1rem;
+                    flex-wrap: wrap;
                     position: relative;
                     z-index: 1;
                 }
 
-                .products-carousel-stage {
-                    min-height: 100%;
+                .tool-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.6rem;
+                    background: rgba(255, 255, 255, 0.92);
+                    border: 1px solid rgba(236, 72, 153, 0.18);
+                    border-radius: 9999px;
+                    padding: 0.65rem 0.9rem;
+                    box-shadow: 0 6px 18px rgba(190, 24, 93, 0.08);
+                }
+
+                .tool-group span {
+                    color: #9f1239;
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                }
+
+                .tool-group select {
+                    border: none;
+                    background: transparent;
+                    color: #831843;
+                    font-size: 0.92rem;
+                    font-weight: 600;
+                    outline: none;
+                    cursor: pointer;
+                }
+
+                .products-carousel-shell {
+                    max-width: 1180px;
+                    margin: 0 auto;
+                    padding: 1.25rem 1rem 0;
+                    z-index: 1;
+                }
+
+                .products-carousel-head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    margin-bottom: 0.9rem;
                 }
 
                 .products-carousel-meta {
                     display: flex;
-                    justify-content: flex-end;
                     color: #9f1239;
-                    font-size: 0.92rem;
-                    font-weight: 600;
-                    margin-bottom: 1rem;
-                    padding-right: 0.5rem;
+                    font-size: 0.9rem;
+                    font-weight: 700;
+                    flex-wrap: wrap;
                 }
 
                 .products-grid {
                     display: grid;
-                    gap: 2rem;
+                    gap: 1rem;
                     align-items: stretch;
                 }
 
+                .carousel-arrow-group {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.55rem;
+                    flex-shrink: 0;
+                }
+
                 .carousel-arrow {
-                    width: 56px;
-                    height: 56px;
+                    width: 46px;
+                    height: 46px;
                     border: none;
                     border-radius: 9999px;
-                    background: rgba(255, 255, 255, 0.92);
+                    background: rgba(255, 255, 255, 0.9);
                     color: #be185d;
                     display: flex;
                     align-items: center;
@@ -381,7 +499,7 @@ export default function CatalogScroll() {
                 }
 
                 .carousel-arrow:hover:not(.disabled) {
-                    transform: translateY(-2px);
+                    transform: translateY(-2px) scale(1.04);
                     box-shadow: 0 16px 35px rgba(190, 24, 93, 0.26);
                 }
 
@@ -393,44 +511,13 @@ export default function CatalogScroll() {
 
                 .empty-catalog {
                     text-align: center;
-                    padding: 4rem 2rem;
+                    padding: 3rem 1.25rem;
                     background: white;
                     border-radius: 1.5rem;
                     color: #9f1239;
-                    font-size: 1.3rem;
-                    font-weight: 600;
+                    font-size: 1.1rem;
+                    font-weight: 700;
                     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-                    width: 100%;
-                    margin: 0 auto;
-                }
-
-                .catalog-loading {
-                    min-height: 100vh;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    background: linear-gradient(180deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%);
-                    color: #831843;
-                }
-
-                .catalog-loading p {
-                    font-size: 1.2rem;
-                    font-weight: 600;
-                }
-
-                .spinner {
-                    width: 50px;
-                    height: 50px;
-                    border: 4px solid rgba(236, 72, 153, 0.3);
-                    border-top-color: #ec4899;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                    margin-bottom: 1rem;
-                }
-
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
                 }
 
                 @media (max-width: 768px) {
@@ -439,37 +526,105 @@ export default function CatalogScroll() {
                     }
 
                     .catalog-title {
-                        font-size: 2.5rem;
+                        font-size: 2.25rem;
                     }
 
                     .catalog-subtitle {
-                        font-size: 0.95rem;
+                        font-size: 0.92rem;
+                    }
+
+                    .catalog-status {
+                        font-size: 0.78rem;
                     }
 
                     .categories-filter {
-                        padding: 1rem;
-                        gap: 0.75rem;
+                        padding: 1rem 0.85rem 0.5rem;
+                        gap: 0.6rem;
                         justify-content: center;
                     }
 
                     .category-filter-btn {
-                        padding: 0.6rem 1.1rem;
-                        font-size: 0.9rem;
+                        padding: 0.6rem 0.95rem;
+                        font-size: 0.84rem;
                     }
 
-                    .filter-icon {
-                        font-size: 1rem;
+                    .catalog-tools {
+                        gap: 0.6rem;
                     }
 
-                    .products-carousel-shell {
-                        grid-template-columns: 44px minmax(0, 1fr) 44px;
+                    .tool-group {
+                        padding: 0.6rem 0.8rem;
+                    }
+
+                    .tool-group span,
+                    .tool-group select {
+                        font-size: 0.82rem;
+                    }
+
+                    .products-carousel-head {
+                        align-items: flex-start;
                         gap: 0.75rem;
-                        padding: 1rem;
+                    }
+
+                    .products-grid {
+                        gap: 0.7rem;
                     }
 
                     .carousel-arrow {
-                        width: 44px;
-                        height: 44px;
+                        width: 38px;
+                        height: 38px;
+                    }
+                }
+
+                @media (max-width: 520px) {
+                    .catalog-header {
+                        padding-bottom: 0.75rem;
+                    }
+
+                    .catalog-title {
+                        font-size: 2rem;
+                    }
+
+                    .catalog-tools {
+                        padding-top: 0.5rem;
+                        gap: 0.5rem;
+                    }
+
+                    .tool-group {
+                        width: calc(50% - 0.35rem);
+                        justify-content: space-between;
+                        gap: 0.35rem;
+                        padding: 0.6rem 0.75rem;
+                    }
+
+                    .tool-group select {
+                        width: 100%;
+                        min-width: 0;
+                        font-size: 0.78rem;
+                    }
+
+                    .products-carousel-shell {
+                        padding-left: 0.75rem;
+                        padding-right: 0.75rem;
+                    }
+
+                    .products-carousel-head {
+                        gap: 0.6rem;
+                    }
+
+                    .products-carousel-meta {
+                        font-size: 0.78rem;
+                        line-height: 1.3;
+                        max-width: 160px;
+                    }
+
+                    .carousel-arrow-group {
+                        gap: 0.45rem;
+                    }
+
+                    .carousel-arrow {
+                        width: 36px;
+                        height: 36px;
                     }
                 }
             `}</style>
@@ -479,62 +634,56 @@ export default function CatalogScroll() {
 
 function ProductCard({ product }) {
     const imageUrl = product.images?.[0]?.url || 'https://placehold.co/400x400/1e1e1e/white?text=Sin+Imagen';
-
+    const totalStock = getTotalStock(product);
     const productUrl = `${window.location.origin}/producto/${product.slug}`;
     const message = `Hola! Me interesa el producto: ${product.name} (Precio: $${Number(product.price).toFixed(2)})\nVer producto: ${productUrl}`;
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-
     const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
-    const discountPercent = hasDiscount
-        ? Math.round(((Number(product.compareAtPrice) - Number(product.price)) / Number(product.compareAtPrice)) * 100)
-        : 0;
+    const categoryLabel = product.category?.name || product.categoryInfo?.name || 'Producto';
+    const description = product.description || 'Detalle especial para regalar.';
 
     return (
-        <div className={`product-card ${product.isFeatured ? 'featured' : ''}`}>
-            <div className="badges-overlay">
-                {hasDiscount && (
-                    <div className="product-badge discount">
-                        -{discountPercent}%
-                    </div>
-                )}
-                {product.isFeatured && !hasDiscount && (
-                    <div className="product-badge star">
-                        Destacado
-                    </div>
-                )}
-            </div>
-
+        <article className={`product-card ${product.isFeatured ? 'featured' : ''}`}>
             <Link to={`/producto/${product.slug}`} className="product-image-link">
                 <div className="product-image">
                     <img src={imageUrl} alt={product.name} loading="lazy" />
+                    {hasDiscount && (
+                        <span className="product-discount-badge">
+                            Oferta
+                        </span>
+                    )}
                 </div>
             </Link>
 
             <div className="product-info">
-                <span className="product-category">{product.category?.name || 'Producto'}</span>
+                <span className="product-category">{categoryLabel}</span>
 
                 <Link to={`/producto/${product.slug}`} className="product-title-link">
                     <h3 className="product-name">{product.name}</h3>
                 </Link>
 
-                <div className="stock-info">
-                    <div className={`stock-location ${product.inventory?.stockZaruma > 0 ? 'text-green' : 'text-gray'}`}>
-                        Zaruma: <strong>{product.inventory?.stockZaruma || 0}</strong>
-                    </div>
-                    <div className={`stock-location ${product.inventory?.stockSangolqui > 0 ? 'text-green' : 'text-gray'}`}>
-                        Sangolqui: <strong>{product.inventory?.stockSangolqui || 0}</strong>
-                    </div>
+                <p className="product-description">{description}</p>
+
+                <div className="stock-summary">
+                    <span className={`stock-chip ${totalStock > 0 ? 'available' : 'soldout'}`}>
+                        {totalStock > 0 ? `${totalStock} disponibles` : 'Agotado'}
+                    </span>
+                </div>
+
+                <div className="stock-locations">
+                    <span>Zaruma: {product.inventory?.stockZaruma || 0}</span>
+                    <span>Sangolqui: {product.inventory?.stockSangolqui || 0}</span>
                 </div>
 
                 <div className="price-block">
+                    <span className="price">
+                        ${Number(product.price).toFixed(2)}
+                    </span>
                     {hasDiscount && (
                         <span className="compare-price">
                             ${Number(product.compareAtPrice).toFixed(2)}
                         </span>
                     )}
-                    <span className={`price ${hasDiscount ? 'highlight' : ''}`}>
-                        ${Number(product.price).toFixed(2)}
-                    </span>
                 </div>
 
                 <a
@@ -549,142 +698,152 @@ function ProductCard({ product }) {
 
             <style>{`
                 .product-card {
-                    background: white;
-                    border-radius: 1rem;
+                    background: rgba(255, 255, 255, 0.97);
+                    border-radius: 1.2rem;
                     overflow: hidden;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-                    transition: all 0.3s ease;
+                    box-shadow: 0 12px 26px rgba(131, 24, 67, 0.12);
+                    transition: transform 0.25s ease, box-shadow 0.25s ease;
                     position: relative;
                     width: 100%;
                     min-width: 0;
                     height: 100%;
+                    border: 1px solid rgba(255, 255, 255, 0.65);
                 }
 
                 .product-card:hover {
-                    transform: translateY(-5px);
-                    box-shadow: 0 20px 50px rgba(236, 72, 153, 0.28);
-                }
-
-                .badges-overlay {
-                    position: absolute;
-                    top: 10px;
-                    right: 10px;
-                    z-index: 10;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 5px;
-                }
-
-                .product-badge.discount {
-                    background: #ef4444;
-                    color: white;
-                    font-weight: 800;
-                    padding: 0.5rem 0.75rem;
-                    border-radius: 9999px;
-                    font-size: 0.85rem;
-                    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-                }
-
-                .product-badge.star {
-                    background: linear-gradient(135deg, #ffd700, #ffb700);
-                    color: #000;
-                    font-weight: 700;
-                    padding: 0.5rem 0.75rem;
-                    border-radius: 9999px;
-                    font-size: 0.85rem;
-                    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+                    transform: translateY(-4px);
+                    box-shadow: 0 18px 34px rgba(236, 72, 153, 0.18);
                 }
 
                 .product-image-link {
                     display: block;
+                }
+
+                .product-image {
                     position: relative;
+                    width: 100%;
+                    height: 205px;
                     overflow: hidden;
+                    background: #f8d9e7;
                 }
 
                 .product-image img {
                     width: 100%;
-                    height: 300px;
+                    height: 100%;
                     object-fit: cover;
-                    transition: transform 0.5s ease;
+                    object-position: center;
+                    display: block;
                 }
 
-                .product-card:hover .product-image img {
-                    transform: scale(1.06);
+                .product-discount-badge {
+                    position: absolute;
+                    top: 0.7rem;
+                    left: 0.7rem;
+                    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+                    color: white;
+                    font-size: 0.72rem;
+                    font-weight: 800;
+                    letter-spacing: 0.02em;
+                    padding: 0.35rem 0.6rem;
+                    border-radius: 9999px;
+                    box-shadow: 0 8px 20px rgba(190, 24, 93, 0.22);
                 }
 
                 .product-info {
-                    padding: 1.5rem;
+                    padding: 0.85rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.55rem;
                 }
 
                 .product-category {
                     color: #ec4899;
-                    font-size: 0.85rem;
-                    font-weight: 600;
+                    font-size: 0.68rem;
+                    font-weight: 800;
                     text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    display: block;
-                    margin-bottom: 0.5rem;
+                    letter-spacing: 0.08em;
                 }
 
                 .product-title-link {
-                    text-decoration: none;
                     color: inherit;
+                    text-decoration: none;
                 }
 
                 .product-name {
-                    font-size: 1.25rem;
-                    font-weight: 700;
+                    font-size: 0.98rem;
+                    line-height: 1.22;
                     color: #1a1a2e;
-                    margin-bottom: 0.75rem;
-                    line-height: 1.3;
-                    transition: color 0.2s;
+                    font-weight: 700;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                    min-height: 2.35rem;
                 }
 
-                .product-title-link:hover .product-name {
-                    color: #ec4899;
+                .product-description {
+                    color: #64748b;
+                    font-size: 0.78rem;
+                    line-height: 1.35;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                    min-height: 2.1rem;
                 }
 
-                .stock-info {
+                .stock-summary {
+                    display: flex;
+                }
+
+                .stock-chip {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0.28rem 0.55rem;
+                    border-radius: 9999px;
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                }
+
+                .stock-chip.available {
+                    background: rgba(34, 197, 94, 0.12);
+                    color: #15803d;
+                }
+
+                .stock-chip.soldout {
+                    background: rgba(239, 68, 68, 0.12);
+                    color: #dc2626;
+                }
+
+                .stock-locations {
                     display: flex;
                     flex-wrap: wrap;
-                    gap: 0.75rem;
-                    font-size: 0.85rem;
-                    margin-bottom: 1rem;
+                    gap: 0.35rem;
+                    font-size: 0.72rem;
+                    color: #64748b;
                     background: #f8fafc;
-                    padding: 0.5rem 0.75rem;
-                    border-radius: 0.5rem;
+                    border-radius: 0.75rem;
+                    padding: 0.45rem 0.55rem;
                 }
-
-                .stock-location {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.25rem;
-                }
-
-                .text-green { color: #16a34a; }
-                .text-gray { color: #94a3b8; opacity: 0.85; }
 
                 .price-block {
                     display: flex;
+                    flex-wrap: wrap;
                     align-items: baseline;
-                    gap: 0.75rem;
-                    margin: 0.5rem 0 1.5rem 0;
+                    gap: 0.35rem;
                 }
 
                 .price {
                     color: #1a1a2e;
-                    font-weight: 700;
-                    font-size: 1.5rem;
-                }
-
-                .price.highlight {
-                    color: #ec4899;
+                    font-weight: 800;
+                    font-size: 1.12rem;
                 }
 
                 .compare-price {
                     color: #94a3b8;
                     text-decoration: line-through;
-                    font-size: 1rem;
+                    font-size: 0.78rem;
                 }
 
                 .product-btn {
@@ -692,21 +851,102 @@ function ProductCard({ product }) {
                     align-items: center;
                     justify-content: center;
                     width: 100%;
-                    padding: 0.75rem;
+                    min-height: 38px;
+                    padding: 0.65rem;
                     background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
                     color: white;
                     text-decoration: none;
-                    border-radius: 0.75rem;
-                    font-weight: 600;
-                    transition: all 0.3s;
-                    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+                    border-radius: 0.8rem;
+                    font-weight: 700;
+                    font-size: 0.86rem;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.24);
+                    margin-top: auto;
                 }
 
                 .product-btn:hover {
                     transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(236, 72, 153, 0.45);
+                    box-shadow: 0 10px 24px rgba(236, 72, 153, 0.32);
+                }
+
+                @media (max-width: 768px) {
+                    .product-image {
+                        height: 118px;
+                    }
+
+                    .product-image img {
+                        height: 100%;
+                    }
+
+                    .product-info {
+                        padding: 0.68rem;
+                        gap: 0.42rem;
+                    }
+
+                    .product-name {
+                        font-size: 0.85rem;
+                        min-height: 2rem;
+                    }
+
+                    .product-description {
+                        font-size: 0.7rem;
+                        min-height: 1.9rem;
+                    }
+
+                    .stock-locations {
+                        font-size: 0.64rem;
+                        padding: 0.42rem 0.45rem;
+                    }
+
+                    .price {
+                        font-size: 0.98rem;
+                    }
+
+                    .compare-price {
+                        font-size: 0.68rem;
+                    }
+
+                    .product-btn {
+                        min-height: 34px;
+                        font-size: 0.78rem;
+                        padding: 0.55rem;
+                    }
+
+                    .stock-chip {
+                        font-size: 0.66rem;
+                    }
+                }
+
+                @media (max-width: 420px) {
+                    .product-image {
+                        height: 108px;
+                    }
+
+                    .product-image img {
+                        height: 100%;
+                    }
+
+                    .product-info {
+                        padding: 0.6rem;
+                    }
+
+                    .product-category {
+                        font-size: 0.62rem;
+                    }
+
+                    .product-name {
+                        font-size: 0.8rem;
+                    }
+
+                    .product-description {
+                        font-size: 0.67rem;
+                    }
+
+                    .price {
+                        font-size: 0.92rem;
+                    }
                 }
             `}</style>
-        </div>
+        </article>
     );
 }

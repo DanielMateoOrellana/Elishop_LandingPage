@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import CatalogScroll from '../../components/CatalogScroll';
 import CTA from '../../components/CTA';
@@ -8,16 +8,42 @@ import Footer from '../../components/Footer';
 import WhatsAppFloat from '../../components/WhatsAppFloat';
 
 const LandingPage = () => {
-    useEffect(() => {
+    useLayoutEffect(() => {
         const previousScrollRestoration = window.history.scrollRestoration;
         window.history.scrollRestoration = 'manual';
+        const nextUrl = `${window.location.pathname}${window.location.search}#catalog`;
+        const restoreCatalogAtTop = () => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        };
 
-        const frameId = window.requestAnimationFrame(() => {
-            document.getElementById('catalog')?.scrollIntoView({ block: 'start' });
-        });
+        window.history.replaceState(window.history.state, '', nextUrl);
+        restoreCatalogAtTop();
+
+        const frameIds = [
+            window.requestAnimationFrame(restoreCatalogAtTop),
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(restoreCatalogAtTop);
+            }),
+        ];
+
+        const timeoutIds = [
+            window.setTimeout(restoreCatalogAtTop, 80),
+            window.setTimeout(restoreCatalogAtTop, 220),
+            window.setTimeout(restoreCatalogAtTop, 500),
+        ];
+
+        const handlePageShow = () => {
+            restoreCatalogAtTop();
+        };
+
+        window.addEventListener('pageshow', handlePageShow);
+        window.addEventListener('load', handlePageShow);
 
         return () => {
-            window.cancelAnimationFrame(frameId);
+            frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
+            timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+            window.removeEventListener('pageshow', handlePageShow);
+            window.removeEventListener('load', handlePageShow);
             window.history.scrollRestoration = previousScrollRestoration;
         };
     }, []);
@@ -26,9 +52,9 @@ const LandingPage = () => {
         <>
             <Navbar />
             <CatalogScroll />
-            <CTA />
             <TikTokFeed />
             <Contact />
+            <CTA />
             <Footer />
             <WhatsAppFloat />
         </>
