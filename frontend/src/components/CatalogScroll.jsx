@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api';
 import { products as fallbackProducts, categories as fallbackCategories } from '../data/products';
 
@@ -15,22 +14,12 @@ function slugify(value) {
         .replace(/^-+|-+$/g, '');
 }
 
-function getVisibleCount() {
-    if (typeof window === 'undefined') return 3;
-    if (window.innerWidth < 900) return 2;
-    return 3;
-}
-
 function buildGroupedProducts(categories, products) {
     const grouped = {};
     categories.forEach((category) => {
         grouped[category.id] = products.filter((product) => product.categoryId === category.id);
     });
     return grouped;
-}
-
-function getTotalStock(product) {
-    return (product.inventory?.stockZaruma || 0) + (product.inventory?.stockSangolqui || 0);
 }
 
 function createFallbackCatalog() {
@@ -96,18 +85,8 @@ function sortProducts(products, sortBy) {
             return sortedProducts.sort((a, b) => Number(a.price) - Number(b.price));
         case 'price-desc':
             return sortedProducts.sort((a, b) => Number(b.price) - Number(a.price));
-        case 'stock-desc':
-            return sortedProducts.sort((a, b) => getTotalStock(b) - getTotalStock(a));
-        case 'stock-asc':
-            return sortedProducts.sort((a, b) => getTotalStock(a) - getTotalStock(b));
         default:
-            return sortedProducts.sort((a, b) => {
-                if (Boolean(b.isFeatured) !== Boolean(a.isFeatured)) {
-                    return Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured));
-                }
-
-                return Number(a.price) - Number(b.price);
-            });
+            return sortedProducts.sort((a, b) => Number(a.price) - Number(b.price));
     }
 }
 
@@ -117,10 +96,7 @@ export default function CatalogScroll() {
         buildGroupedProducts(FALLBACK_CATALOG.categories, FALLBACK_CATALOG.products),
     );
     const [selectedCategory, setSelectedCategory] = useState(() => FALLBACK_CATALOG.categories[0]?.id ?? null);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [visibleCount, setVisibleCount] = useState(getVisibleCount);
-    const [sortBy, setSortBy] = useState('featured');
-    const [stockFilter, setStockFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('price-asc');
     const [isSyncing, setIsSyncing] = useState(true);
 
     useEffect(() => {
@@ -161,19 +137,6 @@ export default function CatalogScroll() {
         };
     }, []);
 
-    useEffect(() => {
-        const handleResize = () => {
-            setVisibleCount(getVisibleCount());
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    useEffect(() => {
-        setCurrentIndex(0);
-    }, [selectedCategory, visibleCount, sortBy, stockFilter]);
-
     const allProducts = categories.flatMap((category) =>
         (productsByCategory[category.id] || []).map((product) => ({
             ...product,
@@ -185,28 +148,7 @@ export default function CatalogScroll() {
         ? allProducts
         : allProducts.filter((product) => product.categoryId === selectedCategory);
 
-    const stockFilteredProducts = categoryProducts.filter((product) => {
-        const totalStock = getTotalStock(product);
-
-        if (stockFilter === 'in-stock') return totalStock > 0;
-        if (stockFilter === 'low-stock') return totalStock > 0 && totalStock <= 4;
-        if (stockFilter === 'out-of-stock') return totalStock === 0;
-
-        return true;
-    });
-
-    const displayedProducts = sortProducts(stockFilteredProducts, sortBy);
-    const maxIndex = Math.max(0, displayedProducts.length - visibleCount);
-    const visibleProducts = displayedProducts.slice(currentIndex, currentIndex + visibleCount);
-    const visibleColumns = Math.max(1, Math.min(visibleCount, visibleProducts.length || visibleCount));
-
-    const goToPrevious = () => {
-        setCurrentIndex((prev) => Math.max(prev - 1, 0));
-    };
-
-    const goToNext = () => {
-        setCurrentIndex((prev) => Math.min(prev + 1, maxIndex));
-    };
+    const displayedProducts = sortProducts(categoryProducts, sortBy);
 
     return (
         <section className="catalog-scroll" id="catalog">
@@ -214,7 +156,7 @@ export default function CatalogScroll() {
                 <h1 className="catalog-title">
                     Nuestro <span className="catalog-accent">Catalogo</span>
                 </h1>
-                <p className="catalog-subtitle">Explora nuestras tarjetitas y ordena por precio o stock en segundos.</p>
+                <p className="catalog-subtitle">Explora nuestras tarjetitas y ordena por precio.</p>
                 {isSyncing ? <p className="catalog-status">Actualizando productos...</p> : null}
             </div>
 
@@ -239,65 +181,23 @@ export default function CatalogScroll() {
 
             <div className="catalog-tools">
                 <label className="tool-group">
-                    <span>Ordenar</span>
+                    <span>Precio</span>
                     <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-                        <option value="featured">Recomendados</option>
                         <option value="price-asc">Precio mas bajo</option>
                         <option value="price-desc">Precio mas alto</option>
-                        <option value="stock-desc">Mayor stock</option>
-                        <option value="stock-asc">Menor stock</option>
-                    </select>
-                </label>
-
-                <label className="tool-group">
-                    <span>Stock</span>
-                    <select value={stockFilter} onChange={(event) => setStockFilter(event.target.value)}>
-                        <option value="all">Todos</option>
-                        <option value="in-stock">Solo disponibles</option>
-                        <option value="low-stock">Stock bajo</option>
-                        <option value="out-of-stock">Agotados</option>
                     </select>
                 </label>
             </div>
 
-            <div className="products-carousel-shell">
+            <div className="products-list-shell">
                 {displayedProducts.length > 0 ? (
                     <>
-                        <div className="products-carousel-head">
-                            <div className="products-carousel-meta">
-                                <span>
-                                    Mostrando {Math.min(currentIndex + 1, displayedProducts.length)} - {Math.min(currentIndex + visibleCount, displayedProducts.length)} de {displayedProducts.length}
-                                </span>
-                            </div>
-
-                            <div className="carousel-arrow-group" aria-label="Controles del carrusel">
-                                <button
-                                    type="button"
-                                    className={`carousel-arrow ${currentIndex === 0 ? 'disabled' : ''}`}
-                                    onClick={goToPrevious}
-                                    disabled={currentIndex === 0}
-                                    aria-label="Ver productos anteriores"
-                                >
-                                    <ChevronLeft size={20} />
-                                </button>
-
-                                <button
-                                    type="button"
-                                    className={`carousel-arrow ${currentIndex >= maxIndex ? 'disabled' : ''}`}
-                                    onClick={goToNext}
-                                    disabled={currentIndex >= maxIndex}
-                                    aria-label="Ver productos siguientes"
-                                >
-                                    <ChevronRight size={20} />
-                                </button>
-                            </div>
+                        <div className="products-list-meta">
+                            <span>{displayedProducts.length} productos</span>
                         </div>
 
-                        <div
-                            className="products-grid"
-                            style={{ gridTemplateColumns: `repeat(${visibleColumns}, minmax(0, 1fr))` }}
-                        >
-                            {visibleProducts.map((product) => (
+                        <div className="products-grid">
+                            {displayedProducts.map((product) => (
                                 <ProductCard key={product.id} product={product} />
                             ))}
                         </div>
@@ -381,7 +281,7 @@ export default function CatalogScroll() {
                     padding: 0.7rem 1.2rem;
                     background: rgba(255, 255, 255, 0.96);
                     border: 2px solid transparent;
-                    border-radius: 9999px;
+                    border-radius: 0.9rem;
                     color: #831843;
                     font-weight: 600;
                     font-size: 0.95rem;
@@ -426,7 +326,7 @@ export default function CatalogScroll() {
                     gap: 0.6rem;
                     background: rgba(255, 255, 255, 0.92);
                     border: 1px solid rgba(236, 72, 153, 0.18);
-                    border-radius: 9999px;
+                    border-radius: 0.9rem;
                     padding: 0.65rem 0.9rem;
                     box-shadow: 0 6px 18px rgba(190, 24, 93, 0.08);
                 }
@@ -447,66 +347,27 @@ export default function CatalogScroll() {
                     cursor: pointer;
                 }
 
-                .products-carousel-shell {
-                    max-width: 1180px;
+                .products-list-shell {
+                    max-width: 1260px;
                     margin: 0 auto;
                     padding: 1.25rem 1rem 0;
                     z-index: 1;
                 }
 
-                .products-carousel-head {
+                .products-list-meta {
                     display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 1rem;
-                    margin-bottom: 0.9rem;
-                }
-
-                .products-carousel-meta {
-                    display: flex;
+                    justify-content: center;
                     color: #9f1239;
                     font-size: 0.9rem;
                     font-weight: 700;
-                    flex-wrap: wrap;
+                    margin-bottom: 0.9rem;
                 }
 
                 .products-grid {
                     display: grid;
+                    grid-template-columns: repeat(4, minmax(0, 1fr));
                     gap: 1rem;
                     align-items: stretch;
-                }
-
-                .carousel-arrow-group {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 0.55rem;
-                    flex-shrink: 0;
-                }
-
-                .carousel-arrow {
-                    width: 46px;
-                    height: 46px;
-                    border: none;
-                    border-radius: 9999px;
-                    background: rgba(255, 255, 255, 0.9);
-                    color: #be185d;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    box-shadow: 0 10px 25px rgba(190, 24, 93, 0.18);
-                    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-                }
-
-                .carousel-arrow:hover:not(.disabled) {
-                    transform: translateY(-2px) scale(1.04);
-                    box-shadow: 0 16px 35px rgba(190, 24, 93, 0.26);
-                }
-
-                .carousel-arrow.disabled {
-                    opacity: 0.4;
-                    cursor: not-allowed;
-                    box-shadow: none;
                 }
 
                 .empty-catalog {
@@ -518,6 +379,16 @@ export default function CatalogScroll() {
                     font-size: 1.1rem;
                     font-weight: 700;
                     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+                }
+
+                @media (max-width: 1100px) {
+                    .products-list-shell {
+                        max-width: 980px;
+                    }
+
+                    .products-grid {
+                        grid-template-columns: repeat(3, minmax(0, 1fr));
+                    }
                 }
 
                 @media (max-width: 768px) {
@@ -561,18 +432,13 @@ export default function CatalogScroll() {
                         font-size: 0.82rem;
                     }
 
-                    .products-carousel-head {
-                        align-items: flex-start;
-                        gap: 0.75rem;
+                    .products-list-shell {
+                        max-width: 760px;
                     }
 
                     .products-grid {
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
                         gap: 0.7rem;
-                    }
-
-                    .carousel-arrow {
-                        width: 38px;
-                        height: 38px;
                     }
                 }
 
@@ -603,28 +469,15 @@ export default function CatalogScroll() {
                         font-size: 0.78rem;
                     }
 
-                    .products-carousel-shell {
+                    .products-list-shell {
                         padding-left: 0.75rem;
                         padding-right: 0.75rem;
                     }
+                }
 
-                    .products-carousel-head {
-                        gap: 0.6rem;
-                    }
-
-                    .products-carousel-meta {
-                        font-size: 0.78rem;
-                        line-height: 1.3;
-                        max-width: 160px;
-                    }
-
-                    .carousel-arrow-group {
-                        gap: 0.45rem;
-                    }
-
-                    .carousel-arrow {
-                        width: 36px;
-                        height: 36px;
+                @media (max-width: 360px) {
+                    .products-grid {
+                        grid-template-columns: minmax(0, 1fr);
                     }
                 }
             `}</style>
@@ -634,7 +487,6 @@ export default function CatalogScroll() {
 
 function ProductCard({ product }) {
     const imageUrl = product.images?.[0]?.url || 'https://placehold.co/400x400/1e1e1e/white?text=Sin+Imagen';
-    const totalStock = getTotalStock(product);
     const productUrl = `${window.location.origin}/producto/${product.slug}`;
     const message = `Hola! Me interesa el producto: ${product.name} (Precio: $${Number(product.price).toFixed(2)})\nVer producto: ${productUrl}`;
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
@@ -663,17 +515,6 @@ function ProductCard({ product }) {
                 </Link>
 
                 <p className="product-description">{description}</p>
-
-                <div className="stock-summary">
-                    <span className={`stock-chip ${totalStock > 0 ? 'available' : 'soldout'}`}>
-                        {totalStock > 0 ? `${totalStock} disponibles` : 'Agotado'}
-                    </span>
-                </div>
-
-                <div className="stock-locations">
-                    <span>Zaruma: {product.inventory?.stockZaruma || 0}</span>
-                    <span>Sangolqui: {product.inventory?.stockSangolqui || 0}</span>
-                </div>
 
                 <div className="price-block">
                     <span className="price">
@@ -745,7 +586,7 @@ function ProductCard({ product }) {
                     font-weight: 800;
                     letter-spacing: 0.02em;
                     padding: 0.35rem 0.6rem;
-                    border-radius: 9999px;
+                    border-radius: 0.75rem;
                     box-shadow: 0 8px 20px rgba(190, 24, 93, 0.22);
                 }
 
@@ -790,41 +631,6 @@ function ProductCard({ product }) {
                     -webkit-box-orient: vertical;
                     overflow: hidden;
                     min-height: 2.1rem;
-                }
-
-                .stock-summary {
-                    display: flex;
-                }
-
-                .stock-chip {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 0.28rem 0.55rem;
-                    border-radius: 9999px;
-                    font-size: 0.72rem;
-                    font-weight: 700;
-                }
-
-                .stock-chip.available {
-                    background: rgba(34, 197, 94, 0.12);
-                    color: #15803d;
-                }
-
-                .stock-chip.soldout {
-                    background: rgba(239, 68, 68, 0.12);
-                    color: #dc2626;
-                }
-
-                .stock-locations {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 0.35rem;
-                    font-size: 0.72rem;
-                    color: #64748b;
-                    background: #f8fafc;
-                    border-radius: 0.75rem;
-                    padding: 0.45rem 0.55rem;
                 }
 
                 .price-block {
@@ -893,11 +699,6 @@ function ProductCard({ product }) {
                         min-height: 1.9rem;
                     }
 
-                    .stock-locations {
-                        font-size: 0.64rem;
-                        padding: 0.42rem 0.45rem;
-                    }
-
                     .price {
                         font-size: 0.98rem;
                     }
@@ -910,10 +711,6 @@ function ProductCard({ product }) {
                         min-height: 34px;
                         font-size: 0.78rem;
                         padding: 0.55rem;
-                    }
-
-                    .stock-chip {
-                        font-size: 0.66rem;
                     }
                 }
 
