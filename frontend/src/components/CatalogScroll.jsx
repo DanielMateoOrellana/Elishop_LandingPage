@@ -449,7 +449,7 @@ export default function CatalogScroll() {
                     .categories-filter {
                         padding: 1rem;
                         gap: 0.75rem;
-                        justify-content: flex-start;
+                        justify-content: center;
                     }
 
                     .category-filter-btn {
