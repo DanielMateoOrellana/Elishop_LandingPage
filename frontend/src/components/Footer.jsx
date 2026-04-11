@@ -9,7 +9,7 @@ export default function Footer() {
             <div className="container">
                 <div className={`footer-content animate-fade-in-up ${isVisible ? 'visible' : ''}`}>
                     <div className="footer-brand">
-                        <a href="#hero" className="footer-logo">
+                        <a href="#catalog" className="footer-logo">
                             <img src="/images/LOGO ELIS.png" alt="EliShop - Made with Love" />
                         </a>
                         <p>Joyería y accesorios únicos para cada momento especial de tu vida. 4 años creando detalles con amor.</p>
@@ -29,18 +29,17 @@ export default function Footer() {
 
                     <div className="footer-links">
                         <h4>Navegación</h4>
-                        <a href="#hero">Inicio</a>
-                        <a href="#about">Nosotros</a>
-                        <a href="#products">Productos</a>
-                        <a href="#categories">Categorías</a>
+                        <a href="#catalog">Inicio</a>
+                        <a href="#catalog">Productos</a>
+                        <a href="#catalog">Categorías</a>
                     </div>
 
                     <div className="footer-links">
                         <h4>Categorías</h4>
-                        <a href="#products">Anillos</a>
-                        <a href="#products">Collares</a>
-                        <a href="#products">Pulseras</a>
-                        <a href="#products">Sets de Regalo</a>
+                        <a href="#catalog">Anillos</a>
+                        <a href="#catalog">Collares</a>
+                        <a href="#catalog">Pulseras</a>
+                        <a href="#catalog">Sets de Regalo</a>
                     </div>
 
                     <div className="footer-links">

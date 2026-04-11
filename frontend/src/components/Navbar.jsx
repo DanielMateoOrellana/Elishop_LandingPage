@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -8,6 +8,7 @@ export default function Navbar() {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 50);
         };
+
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
@@ -19,18 +20,17 @@ export default function Navbar() {
     return (
         <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
             <div className="nav-container">
-                <a href="#hero" className="nav-logo">
-                    <span className="logo-text">Eli</span>
-                    <span className="logo-accent">Shop</span>
+                <a href="#catalog" className="nav-logo" onClick={handleNavClick}>
+                    <img src="/images/logo.png" alt="EliShop" className="nav-logo-image" />
                 </a>
+
                 <div className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
-                    <a href="#hero" className="nav-link" onClick={handleNavClick}>Inicio</a>
-                    <a href="#about" className="nav-link" onClick={handleNavClick}>Nosotros</a>
-                    <a href="#products" className="nav-link" onClick={handleNavClick}>Productos</a>
-                    <a href="#categories" className="nav-link" onClick={handleNavClick}>Categorías</a>
-                    <a href="#testimonials" className="nav-link" onClick={handleNavClick}>Testimonios</a>
-                    <a href="#contact" className="nav-link nav-cta" onClick={handleNavClick}>Contáctanos</a>
+                    <a href="#catalog" className="nav-link" onClick={handleNavClick}>Inicio</a>
+                    <a href="#catalog" className="nav-link" onClick={handleNavClick}>Productos</a>
+                    <a href="#catalog" className="nav-link" onClick={handleNavClick}>Categorías</a>
+                    <a href="#contact" className="nav-link nav-cta" onClick={handleNavClick}>Contactanos</a>
                 </div>
+
                 <div
                     className={`nav-toggle ${isMenuOpen ? 'active' : ''}`}
                     onClick={() => setIsMenuOpen(!isMenuOpen)}

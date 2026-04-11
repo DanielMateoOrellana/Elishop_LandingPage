@@ -53,6 +53,7 @@
 
 html {
     scroll-behavior: smooth;
+    scroll-padding-top: 110px;
 }
 
 body {
@@ -196,14 +197,14 @@ ul {
     left: 0;
     right: 0;
     z-index: 1000;
-    padding: 16px 0;
+    padding: 10px 0;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     transition: all var(--transition-normal);
 }
 
 .navbar.scrolled {
-    padding: 12px 0;
+    padding: 8px 0;
     box-shadow: var(--shadow-sm);
 }
 
@@ -222,6 +223,14 @@ ul {
     font-weight: 700;
     display: flex;
     align-items: center;
+    line-height: 0;
+}
+
+.nav-logo-image {
+    height: 54px;
+    width: auto;
+    display: block;
+    object-fit: contain;
 }
 
 .logo-text {
@@ -233,6 +242,14 @@ ul {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.navbar.scrolled .nav-logo-image {
+    height: 48px;
+}
+
+section[id] {
+    scroll-margin-top: 92px;
 }
 
 .nav-menu {
