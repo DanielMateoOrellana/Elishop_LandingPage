@@ -10,7 +10,7 @@ export default function Footer() {
                 <div className={`footer-content animate-fade-in-up ${isVisible ? 'visible' : ''}`}>
                     <div className="footer-brand">
                         <a href="#catalog" className="footer-logo">
-                            <img src="/images/LOGO ELIS.png" alt="EliShop - Made with Love" />
+                            <img src="/images/logo-elishop.jpg" alt="EliShop - Made with Love" />
                         </a>
                         <p>Joyería y accesorios únicos para cada momento especial de tu vida. 4 años creando detalles con amor.</p>
                         <div className="footer-social">

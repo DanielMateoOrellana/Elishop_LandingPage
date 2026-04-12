@@ -21,7 +21,7 @@ export default function Navbar() {
         <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
             <div className="nav-container">
                 <a href="#catalog" className="nav-logo" onClick={handleNavClick}>
-                    <img src="/images/logo.png" alt="EliShop" className="nav-logo-image" />
+                    <img src="/images/logo-elishop.jpg" alt="EliShop" className="nav-logo-image" />
                 </a>
 
                 <div className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>

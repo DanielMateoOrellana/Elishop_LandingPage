@@ -154,9 +154,8 @@ export default function CatalogScroll() {
         <section className="catalog-scroll" id="catalog">
             <div className="catalog-header">
                 <h1 className="catalog-title">
-                    Nuestro <span className="catalog-accent">Catalogo</span>
+                    Nuestro <span className="catalog-accent">Catálogo</span>
                 </h1>
-                <p className="catalog-subtitle">Explora nuestras tarjetitas y ordena por precio.</p>
                 {isSyncing ? <p className="catalog-status">Actualizando productos...</p> : null}
             </div>
 
