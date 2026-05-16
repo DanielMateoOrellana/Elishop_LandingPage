@@ -28,7 +28,7 @@ export default function Contact() {
                         <h3>WhatsApp</h3>
                         <p>Escríbenos para pedidos y consultas</p>
                         <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer">
-                            0967074437
+                            0968486726
                         </a>
                     </div>
 

@@ -199,5 +199,5 @@ export const testimonials = [
     }
 ];
 
-export const WHATSAPP_NUMBER = "593967074437";
+export const WHATSAPP_NUMBER = "593968486726";
 export const INSTAGRAM_HANDLE = "elis_shop.ec";

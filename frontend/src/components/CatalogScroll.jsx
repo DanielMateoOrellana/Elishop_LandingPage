@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api';
 import { products as fallbackProducts, categories as fallbackCategories } from '../data/products';
 
-const WHATSAPP_NUMBER = '593967074437';
+const WHATSAPP_NUMBER = '593968486726';
 
 function slugify(value) {
     return value

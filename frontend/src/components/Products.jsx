@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api';
 import { useScrollAnimation, useStaggeredAnimation } from '../hooks/useScrollAnimation';
 
-const WHATSAPP_NUMBER = "593967074437";
+const WHATSAPP_NUMBER = "593968486726";
 
 export default function Products() {
     const [products, setProducts] = useState([]);

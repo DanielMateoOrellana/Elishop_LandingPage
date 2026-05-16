@@ -58,7 +58,7 @@ const ProductDetail = () => {
             return;
         }
 
-        const phone = "593967074437";
+        const phone = "593968486726";
         const locationName = selectedLocation === 'Sangolqui' ? 'Sangolquí' : selectedLocation;
         const productUrl = `${window.location.origin}/producto/${product.slug}`;
         const message = `Hola, me interesa comprar: *${product.name}* \nPrecio: $${product.price} \nCantidad: ${quantity} \nDesde Bodega: *${locationName}*\n🔗 Ver producto: ${productUrl}`;
