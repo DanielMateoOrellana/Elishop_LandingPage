@@ -12,10 +12,11 @@ export default function Contact() {
                     className={`section-header ${headerVisible ? 'animate-visible' : ''}`}
                     ref={headerRef}
                 >
-                    <span className="section-tag">📱 Contáctanos</span>
+                    <span className="section-tag">Contáctanos</span>
                     <h2 className="section-title">
-                        ¿Tienes <span className="gradient-text">Preguntas</span>?
+                        ¿Tienes <em>preguntas</em>?
                     </h2>
+                    <p className="section-description">Te respondemos rápido y te ayudamos a elegir el detalle ideal.</p>
                 </div>
 
                 <div className="contact-grid" ref={gridRef}>
@@ -54,7 +55,7 @@ export default function Contact() {
                         </div>
                         <h3>Ubicación</h3>
                         <p>Envíos a todo Ecuador</p>
-                        <span>🇪🇨 Ecuador</span>
+                        <span>Zaruma · Sangolquí</span>
                     </div>
                 </div>
             </div>

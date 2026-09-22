@@ -1,0 +1,619 @@
+/* ========================================
+   CATÁLOGO (sección principal del landing)
+   ======================================== */
+.catalog-scroll {
+    min-height: 100vh;
+    background:
+        radial-gradient(900px 420px at 50% -120px, var(--rose-tint), transparent 70%),
+        var(--bg);
+    padding: calc(var(--nav-height) + 3rem) 0 5rem;
+    position: relative;
+}
+
+.catalog-header {
+    text-align: center;
+    padding: 0 1rem;
+    max-width: 840px;
+    margin: 0 auto;
+    animation: catalogFadeUp 0.7s var(--ease-out) both;
+}
+
+.catalog-eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--rose);
+    margin-bottom: 0.75rem;
+}
+
+.catalog-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+}
+
+.catalog-title em {
+    font-style: italic;
+    color: var(--rose);
+}
+
+/* Franja de confianza */
+.catalog-trust {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.75rem;
+    margin-top: 1.1rem;
+    color: var(--ink-soft);
+    font-size: 0.86rem;
+}
+
+.catalog-trust li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.catalog-trust svg {
+    color: var(--rose);
+    flex-shrink: 0;
+}
+
+/* ---------- Filtros de categoría ---------- */
+.catalog-filters {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: 1100px;
+    margin: 2rem auto 0;
+    padding: 0 1rem;
+    animation: catalogFadeUp 0.7s var(--ease-out) 0.08s both;
+}
+
+.filter-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: var(--radius-full);
+    background: var(--ink);
+    box-shadow: 0 6px 18px rgba(31, 26, 28, 0.18);
+    transition:
+        transform 0.45s var(--ease-out),
+        width 0.45s var(--ease-out),
+        height 0.45s var(--ease-out);
+    animation: indicatorIn 0.3s ease both;
+    pointer-events: none;
+}
+
+.filter-btn {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.15rem;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    color: var(--ink-soft);
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.filter-btn:hover {
+    color: var(--ink);
+    border-color: #e2d4d8;
+    background: var(--surface);
+}
+
+.filter-btn[aria-pressed='true'] {
+    color: var(--white);
+    border-color: transparent;
+    background: transparent;
+}
+
+/* Mientras el indicador no se ha medido, el botón activo se pinta solo */
+.catalog-filters:not(.has-indicator) .filter-btn[aria-pressed='true'] {
+    background: var(--ink);
+}
+
+.filter-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+/* ---------- Barra de herramientas ---------- */
+.catalog-toolbar {
+    max-width: 1260px;
+    margin: 2rem auto 0;
+    padding: 0 1rem 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.catalog-count {
+    color: var(--ink-soft);
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.catalog-count strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.catalog-sync {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: 0.75rem;
+    color: var(--ink-faint);
+    font-size: 0.8rem;
+}
+
+.catalog-sync::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--rose);
+    animation: syncPulse 1.2s ease-in-out infinite;
+}
+
+.sort-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--ink-soft);
+    font-size: 0.86rem;
+}
+
+.sort-control select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6064' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.8rem center,
+        var(--surface);
+    padding: 0.45rem 2.1rem 0.45rem 0.95rem;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.sort-control select:hover {
+    border-color: #e2d4d8;
+}
+
+/* ---------- Grid ---------- */
+.products-list-shell {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 0;
+}
+
+.catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem 1.25rem;
+}
+
+.empty-catalog {
+    text-align: center;
+    padding: 4rem 1.25rem;
+    color: var(--ink-soft);
+    font-size: 1rem;
+}
+
+/* ---------- Tarjeta de producto ---------- */
+.catalog-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: box-shadow 0.4s var(--ease-out), border-color 0.4s ease, transform 0.4s var(--ease-out);
+    /* backwards (no both): al terminar libera transform para que funcione el hover */
+    animation: cardIn 0.55s var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+.card-media {
+    position: relative;
+    display: block;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: linear-gradient(100deg, #f6eef1 30%, #fcf7f9 50%, #f6eef1 70%);
+    background-size: 300% 100%;
+    animation: shimmer 1.4s linear infinite;
+}
+
+.catalog-card.is-loaded .card-media {
+    animation: none;
+    background: #f6eef1;
+}
+
+.card-media img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s var(--ease-out), opacity 0.5s ease;
+}
+
+.card-img-primary {
+    opacity: 0;
+}
+
+.catalog-card.is-loaded .card-img-primary {
+    opacity: 1;
+}
+
+.card-img-secondary {
+    opacity: 0;
+}
+
+@media (hover: hover) {
+    .catalog-card:hover {
+        border-color: transparent;
+        box-shadow: 0 16px 40px rgba(31, 26, 28, 0.09);
+        transform: translateY(-3px);
+    }
+
+    .catalog-card:hover .card-media img {
+        transform: scale(1.05);
+    }
+
+    .catalog-card.has-secondary:hover .card-img-secondary {
+        opacity: 1;
+    }
+}
+
+.card-badge {
+    position: absolute;
+    top: 0.7rem;
+    left: 0.7rem;
+    z-index: 1;
+    padding: 0.28rem 0.65rem;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.92);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    color: var(--ink);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.card-badge.is-sale {
+    background: var(--rose);
+    color: var(--white);
+}
+
+.card-badge.is-soldout {
+    background: var(--ink);
+    color: var(--white);
+}
+
+.catalog-card.is-soldout .card-media img {
+    filter: grayscale(0.6);
+    opacity: 0.75;
+}
+
+.card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.95rem 1rem 1rem;
+}
+
+.card-category {
+    color: var(--ink-faint);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.card-title-link {
+    color: inherit;
+}
+
+.card-title {
+    font-family: var(--font-display);
+    font-size: 1.04rem;
+    font-weight: 600;
+    line-height: 1.28;
+    color: var(--ink);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.56em;
+    transition: color 0.2s ease;
+}
+
+.card-title-link:hover .card-title {
+    color: var(--rose);
+}
+
+.card-desc {
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-price-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.5rem;
+    margin-top: auto;
+    padding-top: 0.45rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.card-price {
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.card-compare {
+    color: var(--ink-faint);
+    text-decoration: line-through;
+    font-size: 0.82rem;
+}
+
+.card-stock-note {
+    color: var(--rose);
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+.card-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    margin-top: 0.7rem;
+    min-height: 40px;
+    padding: 0.55rem 0.75rem;
+    background: var(--rose);
+    color: var(--white);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.86rem;
+    transition: background-color 0.25s ease, transform 0.2s ease;
+}
+
+.card-cta:hover {
+    background: var(--rose-deep);
+    color: var(--white);
+}
+
+.card-cta:active {
+    transform: scale(0.98);
+}
+
+.catalog-card.is-soldout .card-cta {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+}
+
+.catalog-card.is-soldout .card-cta:hover {
+    border-color: var(--ink);
+}
+
+/* ---------- Skeleton ---------- */
+.skeleton-card {
+    animation: none;
+}
+
+.skeleton-line {
+    display: block;
+    height: 0.8rem;
+    border-radius: 6px;
+    background: linear-gradient(100deg, #f3eaee 30%, #faf5f7 50%, #f3eaee 70%);
+    background-size: 300% 100%;
+    animation: shimmer 1.4s linear infinite;
+}
+
+.skeleton-line.is-short {
+    width: 40%;
+    height: 0.6rem;
+}
+
+.skeleton-line.is-title {
+    width: 85%;
+    height: 1rem;
+}
+
+.skeleton-line.is-price {
+    width: 30%;
+    margin-top: 0.6rem;
+}
+
+.skeleton-line.is-button {
+    height: 40px;
+    border-radius: 10px;
+    margin-top: 0.7rem;
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes cardIn {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes catalogFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes indicatorIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes syncPulse {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+    .catalog-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .catalog-scroll {
+        padding-top: calc(var(--nav-height) + 2rem);
+    }
+
+    .catalog-trust {
+        font-size: 0.8rem;
+        gap: 0.4rem 1.1rem;
+    }
+
+    .catalog-filters {
+        margin-top: 1.5rem;
+        gap: 0.4rem;
+    }
+
+    .filter-btn {
+        padding: 0.5rem 0.9rem;
+        font-size: 0.84rem;
+    }
+
+    .catalog-toolbar {
+        margin-top: 1.5rem;
+    }
+
+    .catalog-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.9rem 0.75rem;
+    }
+
+    .catalog-card {
+        border-radius: 14px;
+    }
+
+    .card-body {
+        padding: 0.7rem 0.75rem 0.8rem;
+    }
+
+    .card-title {
+        font-size: 0.92rem;
+    }
+
+    .card-desc {
+        display: none;
+    }
+
+    .card-price {
+        font-size: 1rem;
+    }
+
+    .card-cta {
+        min-height: 36px;
+        font-size: 0.8rem;
+        margin-top: 0.55rem;
+    }
+}
+
+@media (max-width: 520px) {
+    .catalog-toolbar {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .catalog-sync {
+        display: none;
+    }
+
+    .sort-control > span {
+        display: none;
+    }
+
+    .products-list-shell {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .card-badge {
+        top: 0.5rem;
+        left: 0.5rem;
+        font-size: 0.6rem;
+        padding: 0.22rem 0.5rem;
+    }
+
+    .card-category {
+        font-size: 0.6rem;
+    }
+
+    .card-stock-note {
+        font-size: 0.68rem;
+    }
+}
+
+@media (max-width: 340px) {
+    .catalog-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

@@ -28,30 +28,21 @@ export default function Footer() {
                     </div>
 
                     <div className="footer-links">
-                        <h4>Navegación</h4>
-                        <a href="#catalog">Inicio</a>
-                        <a href="#catalog">Productos</a>
-                        <a href="#catalog">Categorías</a>
-                    </div>
-
-                    <div className="footer-links">
-                        <h4>Categorías</h4>
-                        <a href="#catalog">Anillos</a>
-                        <a href="#catalog">Collares</a>
-                        <a href="#catalog">Pulseras</a>
-                        <a href="#catalog">Sets de Regalo</a>
+                        <h4>Tienda</h4>
+                        <a href="#catalog">Catálogo</a>
+                        <a href="#tiktok">TikTok</a>
+                        <a href="#contact">Contacto</a>
                     </div>
 
                     <div className="footer-links">
                         <h4>Atención</h4>
                         <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
                         <a href={`https://instagram.com/${INSTAGRAM_HANDLE}`} target="_blank" rel="noopener noreferrer">Instagram</a>
-                        <a href="#contact">Contacto</a>
                     </div>
                 </div>
 
                 <div className="footer-bottom">
-                    <p>&copy; 2026 EliShop. Todos los derechos reservados. Hecho con 💖 en Ecuador</p>
+                    <p>&copy; 2026 EliShop. Todos los derechos reservados. Hecho con amor en Ecuador</p>
                 </div>
             </div>
         </footer>

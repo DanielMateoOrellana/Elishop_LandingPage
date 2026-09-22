@@ -1,15 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { MapPin, MessageCircle, Truck } from 'lucide-react';
 import api from '../api';
-import { products as fallbackProducts, categories as fallbackCategories } from '../data/products';
+import {
+    products as fallbackProducts,
+    categories as fallbackCategories,
+    WHATSAPP_NUMBER,
+} from '../data/products';
+import '../styles/catalog.css';
 
-const WHATSAPP_NUMBER = '593968486726';
+const PLACEHOLDER_IMAGE = 'https://placehold.co/400x400/f6eef1/a59a9e?text=Sin+Imagen';
+// Tiempo máximo mostrando skeletons antes de enseñar el catálogo local mientras responde la API
+const SKELETON_TIMEOUT_MS = 2500;
+const SKELETON_COUNT = 8;
+const LOW_STOCK_THRESHOLD = 3;
+const MAX_STAGGER_ITEMS = 12;
 
 function slugify(value) {
     return value
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[̀-ͯ]/g, '')
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
 }
@@ -20,6 +31,10 @@ function buildGroupedProducts(categories, products) {
         grouped[category.id] = products.filter((product) => product.categoryId === category.id);
     });
     return grouped;
+}
+
+function getTotalStock(product) {
+    return (product.inventory?.stockZaruma || 0) + (product.inventory?.stockSangolqui || 0);
 }
 
 function createFallbackCatalog() {
@@ -98,6 +113,8 @@ export default function CatalogScroll() {
     const [selectedCategory, setSelectedCategory] = useState(() => FALLBACK_CATALOG.categories[0]?.id ?? null);
     const [sortBy, setSortBy] = useState('price-asc');
     const [isSyncing, setIsSyncing] = useState(true);
+    const [showSkeleton, setShowSkeleton] = useState(true);
+    const [dataSource, setDataSource] = useState('fallback');
 
     useEffect(() => {
         let isMounted = true;
@@ -115,6 +132,7 @@ export default function CatalogScroll() {
                 if (categoriesData.length > 0 && liveProducts.length > 0) {
                     setCategories(categoriesData);
                     setProductsByCategory(buildGroupedProducts(categoriesData, liveProducts));
+                    setDataSource('live');
                     setSelectedCategory((previousCategory) =>
                         categoriesData.some((category) => category.id === previousCategory)
                             ? previousCategory
@@ -126,14 +144,17 @@ export default function CatalogScroll() {
             } finally {
                 if (isMounted) {
                     setIsSyncing(false);
+                    setShowSkeleton(false);
                 }
             }
         };
 
         fetchData();
+        const skeletonTimeoutId = window.setTimeout(() => setShowSkeleton(false), SKELETON_TIMEOUT_MS);
 
         return () => {
             isMounted = false;
+            window.clearTimeout(skeletonTimeoutId);
         };
     }, []);
 
@@ -149,600 +170,281 @@ export default function CatalogScroll() {
         : allProducts.filter((product) => product.categoryId === selectedCategory);
 
     const displayedProducts = sortProducts(categoryProducts, sortBy);
+    // Cambiar la key remonta el grid y vuelve a disparar la entrada escalonada de las tarjetas
+    const gridKey = `${dataSource}-${selectedCategory ?? 'all'}-${sortBy}`;
 
     return (
         <section className="catalog-scroll" id="catalog">
-            <div className="catalog-header">
+            <header className="catalog-header">
+                <span className="catalog-eyebrow">Hecho con amor · Ecuador</span>
                 <h1 className="catalog-title">
-                    Nuestro <span className="catalog-accent">Catálogo</span>
+                    Nuestro <em>Catálogo</em>
                 </h1>
-                {isSyncing ? <p className="catalog-status">Actualizando productos...</p> : null}
-            </div>
+                <ul className="catalog-trust">
+                    <li><Truck size={16} strokeWidth={1.75} /> Envíos a todo Ecuador</li>
+                    <li><MapPin size={16} strokeWidth={1.75} /> Stock en Zaruma y Sangolquí</li>
+                    <li><MessageCircle size={16} strokeWidth={1.75} /> Atención directa por WhatsApp</li>
+                </ul>
+            </header>
 
-            <div className="categories-filter">
-                <button
-                    className={`category-filter-btn ${selectedCategory === null ? 'active' : ''}`}
-                    onClick={() => setSelectedCategory(null)}
-                >
-                    Todos
-                </button>
-                {categories.map((category) => (
-                    <button
-                        key={category.id}
-                        className={`category-filter-btn ${selectedCategory === category.id ? 'active' : ''}`}
-                        onClick={() => setSelectedCategory(category.id)}
-                    >
-                        {category.icon ? <span className="filter-icon">{category.icon}</span> : null}
-                        {category.name}
-                    </button>
-                ))}
-            </div>
+            <CategoryFilters
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onSelect={setSelectedCategory}
+            />
 
-            <div className="catalog-tools">
-                <label className="tool-group">
-                    <span>Precio</span>
+            <div className="catalog-toolbar">
+                <p className="catalog-count">
+                    {showSkeleton ? (
+                        'Cargando productos…'
+                    ) : (
+                        <>
+                            <strong>{displayedProducts.length}</strong>{' '}
+                            {displayedProducts.length === 1 ? 'producto' : 'productos'}
+                        </>
+                    )}
+                    {!showSkeleton && isSyncing ? <span className="catalog-sync">Actualizando</span> : null}
+                </p>
+
+                <label className="sort-control">
+                    <span>Ordenar por</span>
                     <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-                        <option value="price-asc">Precio mas bajo</option>
-                        <option value="price-desc">Precio mas alto</option>
+                        <option value="price-asc">Precio más bajo</option>
+                        <option value="price-desc">Precio más alto</option>
                     </select>
                 </label>
             </div>
 
             <div className="products-list-shell">
-                {displayedProducts.length > 0 ? (
-                    <>
-                        <div className="products-list-meta">
-                            <span>{displayedProducts.length} productos</span>
-                        </div>
-
-                        <div className="products-grid">
-                            {displayedProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} />
-                            ))}
-                        </div>
-                    </>
+                {showSkeleton ? (
+                    <div className="catalog-grid" aria-busy="true">
+                        {Array.from({ length: SKELETON_COUNT }, (_, index) => (
+                            <SkeletonCard key={index} />
+                        ))}
+                    </div>
+                ) : displayedProducts.length > 0 ? (
+                    <div className="catalog-grid" key={gridKey}>
+                        {displayedProducts.map((product, index) => (
+                            <ProductCard
+                                key={product.id}
+                                product={product}
+                                staggerIndex={Math.min(index, MAX_STAGGER_ITEMS)}
+                            />
+                        ))}
+                    </div>
                 ) : (
                     <div className="empty-catalog">
                         <p>No hay productos para ese filtro.</p>
                     </div>
                 )}
             </div>
-
-            <style>{`
-                .catalog-scroll {
-                    min-height: 100vh;
-                    background: linear-gradient(180deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%);
-                    padding: 6rem 0 3rem;
-                    position: relative;
-                    overflow: hidden;
-                }
-
-                .catalog-scroll::before {
-                    content: '';
-                    position: absolute;
-                    inset: 0;
-                    background:
-                        radial-gradient(circle at 20% 30%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 70%, rgba(219, 39, 119, 0.15) 0%, transparent 50%);
-                    pointer-events: none;
-                }
-
-                .catalog-header {
-                    text-align: center;
-                    padding: 0 1rem 1rem;
-                    max-width: 840px;
-                    margin: 0 auto;
-                    position: relative;
-                    z-index: 1;
-                }
-
-                .catalog-title {
-                    font-size: 3.35rem;
-                    font-weight: 900;
-                    color: #d61f69;
-                    margin-bottom: 0.85rem;
-                    line-height: 1.05;
-                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.08);
-                }
-
-                .catalog-accent {
-                    color: inherit;
-                }
-
-                .catalog-subtitle {
-                    font-size: 1rem;
-                    color: #9f1239;
-                    font-weight: 500;
-                }
-
-                .catalog-status {
-                    margin-top: 0.7rem;
-                    color: #be185d;
-                    font-size: 0.84rem;
-                    font-weight: 700;
-                }
-
-                .categories-filter {
-                    display: flex;
-                    gap: 0.85rem;
-                    padding: 1rem 1rem 0.75rem;
-                    overflow-x: auto;
-                    position: relative;
-                    z-index: 1;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                }
-
-                .category-filter-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.45rem;
-                    padding: 0.7rem 1.2rem;
-                    background: rgba(255, 255, 255, 0.96);
-                    border: 2px solid transparent;
-                    border-radius: 0.9rem;
-                    color: #831843;
-                    font-weight: 600;
-                    font-size: 0.95rem;
-                    cursor: pointer;
-                    transition: all 0.25s ease;
-                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-                    white-space: nowrap;
-                }
-
-                .category-filter-btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(236, 72, 153, 0.24);
-                    border-color: #fbcfe8;
-                }
-
-                .category-filter-btn.active {
-                    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-                    color: white;
-                    border-color: #be185d;
-                    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.38);
-                }
-
-                .filter-icon {
-                    font-size: 1rem;
-                }
-
-                .catalog-tools {
-                    max-width: 1120px;
-                    margin: 0 auto;
-                    padding: 0.65rem 1rem 0;
-                    display: flex;
-                    justify-content: center;
-                    gap: 1rem;
-                    flex-wrap: wrap;
-                    position: relative;
-                    z-index: 1;
-                }
-
-                .tool-group {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.6rem;
-                    background: rgba(255, 255, 255, 0.92);
-                    border: 1px solid rgba(236, 72, 153, 0.18);
-                    border-radius: 0.9rem;
-                    padding: 0.65rem 0.9rem;
-                    box-shadow: 0 6px 18px rgba(190, 24, 93, 0.08);
-                }
-
-                .tool-group span {
-                    color: #9f1239;
-                    font-size: 0.85rem;
-                    font-weight: 700;
-                }
-
-                .tool-group select {
-                    border: none;
-                    background: transparent;
-                    color: #831843;
-                    font-size: 0.92rem;
-                    font-weight: 600;
-                    outline: none;
-                    cursor: pointer;
-                }
-
-                .products-list-shell {
-                    max-width: 1260px;
-                    margin: 0 auto;
-                    padding: 1.25rem 1rem 0;
-                    z-index: 1;
-                }
-
-                .products-list-meta {
-                    display: flex;
-                    justify-content: center;
-                    color: #9f1239;
-                    font-size: 0.9rem;
-                    font-weight: 700;
-                    margin-bottom: 0.9rem;
-                }
-
-                .products-grid {
-                    display: grid;
-                    grid-template-columns: repeat(4, minmax(0, 1fr));
-                    gap: 1rem;
-                    align-items: stretch;
-                }
-
-                .empty-catalog {
-                    text-align: center;
-                    padding: 3rem 1.25rem;
-                    background: white;
-                    border-radius: 1.5rem;
-                    color: #9f1239;
-                    font-size: 1.1rem;
-                    font-weight: 700;
-                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-                }
-
-                @media (max-width: 1100px) {
-                    .products-list-shell {
-                        max-width: 980px;
-                    }
-
-                    .products-grid {
-                        grid-template-columns: repeat(3, minmax(0, 1fr));
-                    }
-                }
-
-                @media (max-width: 768px) {
-                    .catalog-scroll {
-                        padding-top: 5.75rem;
-                    }
-
-                    .catalog-title {
-                        font-size: 2.25rem;
-                    }
-
-                    .catalog-subtitle {
-                        font-size: 0.92rem;
-                    }
-
-                    .catalog-status {
-                        font-size: 0.78rem;
-                    }
-
-                    .categories-filter {
-                        padding: 1rem 0.85rem 0.5rem;
-                        gap: 0.6rem;
-                        justify-content: center;
-                    }
-
-                    .category-filter-btn {
-                        padding: 0.6rem 0.95rem;
-                        font-size: 0.84rem;
-                    }
-
-                    .catalog-tools {
-                        gap: 0.6rem;
-                    }
-
-                    .tool-group {
-                        padding: 0.6rem 0.8rem;
-                    }
-
-                    .tool-group span,
-                    .tool-group select {
-                        font-size: 0.82rem;
-                    }
-
-                    .products-list-shell {
-                        max-width: 760px;
-                    }
-
-                    .products-grid {
-                        grid-template-columns: repeat(2, minmax(0, 1fr));
-                        gap: 0.7rem;
-                    }
-                }
-
-                @media (max-width: 520px) {
-                    .catalog-header {
-                        padding-bottom: 0.75rem;
-                    }
-
-                    .catalog-title {
-                        font-size: 2rem;
-                    }
-
-                    .catalog-tools {
-                        padding-top: 0.5rem;
-                        gap: 0.5rem;
-                    }
-
-                    .tool-group {
-                        width: calc(50% - 0.35rem);
-                        justify-content: space-between;
-                        gap: 0.35rem;
-                        padding: 0.6rem 0.75rem;
-                    }
-
-                    .tool-group select {
-                        width: 100%;
-                        min-width: 0;
-                        font-size: 0.78rem;
-                    }
-
-                    .products-list-shell {
-                        padding-left: 0.75rem;
-                        padding-right: 0.75rem;
-                    }
-                }
-
-                @media (max-width: 360px) {
-                    .products-grid {
-                        grid-template-columns: minmax(0, 1fr);
-                    }
-                }
-            `}</style>
         </section>
     );
 }
 
-function ProductCard({ product }) {
-    const imageUrl = product.images?.[0]?.url || 'https://placehold.co/400x400/1e1e1e/white?text=Sin+Imagen';
-    const productUrl = `${window.location.origin}/producto/${product.slug}`;
-    const message = `Hola! Me interesa el producto: ${product.name} (Precio: $${Number(product.price).toFixed(2)})\nVer producto: ${productUrl}`;
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
-    const categoryLabel = product.category?.name || product.categoryInfo?.name || 'Producto';
-    const description = product.description || 'Detalle especial para regalar.';
+function CategoryFilters({ categories, selectedCategory, onSelect }) {
+    const containerRef = useRef(null);
+    const [indicator, setIndicator] = useState(null);
+
+    // Mide el botón activo para mover la píldora de fondo hasta él
+    useLayoutEffect(() => {
+        const container = containerRef.current;
+        if (!container) {
+            return undefined;
+        }
+
+        const updateIndicator = () => {
+            const activeButton = container.querySelector('[aria-pressed="true"]');
+            if (!activeButton) {
+                setIndicator(null);
+                return;
+            }
+
+            setIndicator({
+                x: activeButton.offsetLeft,
+                y: activeButton.offsetTop,
+                width: activeButton.offsetWidth,
+                height: activeButton.offsetHeight,
+            });
+        };
+
+        updateIndicator();
+
+        const resizeObserver = new ResizeObserver(updateIndicator);
+        resizeObserver.observe(container);
+        container.querySelectorAll('button').forEach((button) => resizeObserver.observe(button));
+
+        return () => resizeObserver.disconnect();
+    }, [categories, selectedCategory]);
 
     return (
-        <article className={`product-card ${product.isFeatured ? 'featured' : ''}`}>
-            <Link to={`/producto/${product.slug}`} className="product-image-link">
-                <div className="product-image">
-                    <img src={imageUrl} alt={product.name} loading="lazy" />
-                    {hasDiscount && (
-                        <span className="product-discount-badge">
-                            Oferta
-                        </span>
-                    )}
-                </div>
+        <div
+            className={`catalog-filters ${indicator ? 'has-indicator' : ''}`}
+            ref={containerRef}
+            role="group"
+            aria-label="Filtrar por categoría"
+        >
+            {indicator ? (
+                <span
+                    className="filter-indicator"
+                    aria-hidden="true"
+                    style={{
+                        width: indicator.width,
+                        height: indicator.height,
+                        transform: `translate(${indicator.x}px, ${indicator.y}px)`,
+                    }}
+                />
+            ) : null}
+
+            <button
+                type="button"
+                className="filter-btn"
+                aria-pressed={selectedCategory === null}
+                onClick={() => onSelect(null)}
+            >
+                Todos
+            </button>
+            {categories.map((category) => (
+                <button
+                    type="button"
+                    key={category.id}
+                    className="filter-btn"
+                    aria-pressed={selectedCategory === category.id}
+                    onClick={() => onSelect(category.id)}
+                >
+                    {category.icon ? <span className="filter-icon">{category.icon}</span> : null}
+                    {category.name}
+                </button>
+            ))}
+        </div>
+    );
+}
+
+function SkeletonCard() {
+    return (
+        <div className="catalog-card skeleton-card" aria-hidden="true">
+            <div className="card-media" />
+            <div className="card-body">
+                <span className="skeleton-line is-short" />
+                <span className="skeleton-line is-title" />
+                <span className="skeleton-line is-price" />
+                <span className="skeleton-line is-button" />
+            </div>
+        </div>
+    );
+}
+
+function getBadge(product, { isSoldOut, hasDiscount }) {
+    if (isSoldOut) {
+        return { label: 'Agotado', className: 'is-soldout' };
+    }
+
+    if (hasDiscount) {
+        const discount = Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100);
+        return { label: `-${discount}%`, className: 'is-sale' };
+    }
+
+    if (product.isNew) {
+        return { label: 'Nuevo', className: '' };
+    }
+
+    return null;
+}
+
+function ProductCard({ product, staggerIndex }) {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [primaryImage, setPrimaryImage] = useState(product.images?.[0]?.url || PLACEHOLDER_IMAGE);
+    const secondaryImage = product.images?.[1]?.url;
+
+    // Las imágenes en caché pueden terminar de cargar antes de que React escuche onLoad
+    const imageRef = useCallback((node) => {
+        if (node?.complete && node.naturalWidth > 0) {
+            setIsLoaded(true);
+        }
+    }, []);
+
+    const productPath = `/producto/${product.slug}`;
+    const productUrl = `${window.location.origin}${productPath}`;
+    const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
+    const hasInventory = Boolean(product.inventory);
+    const totalStock = getTotalStock(product);
+    const isSoldOut = hasInventory && totalStock === 0;
+    const isLowStock = hasInventory && totalStock > 0 && totalStock <= LOW_STOCK_THRESHOLD;
+    const badge = getBadge(product, { isSoldOut, hasDiscount });
+    const categoryLabel = product.category?.name || product.categoryInfo?.name || 'Producto';
+
+    const message = isSoldOut
+        ? `Hola! ¿Tendrán nuevamente disponible el producto: ${product.name}?\nVer producto: ${productUrl}`
+        : `Hola! Me interesa el producto: ${product.name} (Precio: $${Number(product.price).toFixed(2)})\nVer producto: ${productUrl}`;
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+
+    const cardClassName = [
+        'catalog-card',
+        isLoaded ? 'is-loaded' : '',
+        secondaryImage ? 'has-secondary' : '',
+        isSoldOut ? 'is-soldout' : '',
+    ].filter(Boolean).join(' ');
+
+    return (
+        <article className={cardClassName} style={{ '--i': staggerIndex }}>
+            <Link to={productPath} className="card-media" aria-label={product.name}>
+                <img
+                    ref={imageRef}
+                    className="card-img-primary"
+                    src={primaryImage}
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
+                    onLoad={() => setIsLoaded(true)}
+                    onError={() => {
+                        setPrimaryImage(PLACEHOLDER_IMAGE);
+                        setIsLoaded(true);
+                    }}
+                />
+                {secondaryImage ? (
+                    <img
+                        className="card-img-secondary"
+                        src={secondaryImage}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                    />
+                ) : null}
+                {badge ? <span className={`card-badge ${badge.className}`}>{badge.label}</span> : null}
             </Link>
 
-            <div className="product-info">
-                <span className="product-category">{categoryLabel}</span>
+            <div className="card-body">
+                <span className="card-category">{categoryLabel}</span>
 
-                <Link to={`/producto/${product.slug}`} className="product-title-link">
-                    <h3 className="product-name">{product.name}</h3>
+                <Link to={productPath} className="card-title-link">
+                    <h3 className="card-title">{product.name}</h3>
                 </Link>
 
-                <p className="product-description">{description}</p>
+                {product.description ? <p className="card-desc">{product.description}</p> : null}
 
-                <div className="price-block">
-                    <span className="price">
-                        ${Number(product.price).toFixed(2)}
-                    </span>
-                    {hasDiscount && (
-                        <span className="compare-price">
-                            ${Number(product.compareAtPrice).toFixed(2)}
-                        </span>
-                    )}
+                <div className="card-price-row">
+                    <span className="card-price">${Number(product.price).toFixed(2)}</span>
+                    {hasDiscount ? (
+                        <span className="card-compare">${Number(product.compareAtPrice).toFixed(2)}</span>
+                    ) : null}
                 </div>
+
+                {isLowStock ? (
+                    <span className="card-stock-note">
+                        {totalStock === 1 ? '¡Última unidad!' : `¡Últimas ${totalStock} unidades!`}
+                    </span>
+                ) : null}
 
                 <a
                     href={whatsappUrl}
-                    className="product-btn"
+                    className="card-cta"
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    Lo quiero
+                    <MessageCircle size={16} strokeWidth={2} aria-hidden="true" />
+                    {isSoldOut ? 'Consultar' : 'Lo quiero'}
                 </a>
             </div>
-
-            <style>{`
-                .product-card {
-                    background: rgba(255, 255, 255, 0.97);
-                    border-radius: 1.2rem;
-                    overflow: hidden;
-                    box-shadow: 0 12px 26px rgba(131, 24, 67, 0.12);
-                    transition: transform 0.25s ease, box-shadow 0.25s ease;
-                    position: relative;
-                    width: 100%;
-                    min-width: 0;
-                    height: 100%;
-                    border: 1px solid rgba(255, 255, 255, 0.65);
-                }
-
-                .product-card:hover {
-                    transform: translateY(-4px);
-                    box-shadow: 0 18px 34px rgba(236, 72, 153, 0.18);
-                }
-
-                .product-image-link {
-                    display: block;
-                }
-
-                .product-image {
-                    position: relative;
-                    width: 100%;
-                    height: 205px;
-                    overflow: hidden;
-                    background: #f8d9e7;
-                }
-
-                .product-image img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    object-position: center;
-                    display: block;
-                }
-
-                .product-discount-badge {
-                    position: absolute;
-                    top: 0.7rem;
-                    left: 0.7rem;
-                    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
-                    color: white;
-                    font-size: 0.72rem;
-                    font-weight: 800;
-                    letter-spacing: 0.02em;
-                    padding: 0.35rem 0.6rem;
-                    border-radius: 0.75rem;
-                    box-shadow: 0 8px 20px rgba(190, 24, 93, 0.22);
-                }
-
-                .product-info {
-                    padding: 0.85rem;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.55rem;
-                }
-
-                .product-category {
-                    color: #ec4899;
-                    font-size: 0.68rem;
-                    font-weight: 800;
-                    text-transform: uppercase;
-                    letter-spacing: 0.08em;
-                }
-
-                .product-title-link {
-                    color: inherit;
-                    text-decoration: none;
-                }
-
-                .product-name {
-                    font-size: 0.98rem;
-                    line-height: 1.22;
-                    color: #1a1a2e;
-                    font-weight: 700;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                    min-height: 2.35rem;
-                }
-
-                .product-description {
-                    color: #64748b;
-                    font-size: 0.78rem;
-                    line-height: 1.35;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                    min-height: 2.1rem;
-                }
-
-                .price-block {
-                    display: flex;
-                    flex-wrap: wrap;
-                    align-items: baseline;
-                    gap: 0.35rem;
-                }
-
-                .price {
-                    color: #1a1a2e;
-                    font-weight: 800;
-                    font-size: 1.12rem;
-                }
-
-                .compare-price {
-                    color: #94a3b8;
-                    text-decoration: line-through;
-                    font-size: 0.78rem;
-                }
-
-                .product-btn {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 100%;
-                    min-height: 38px;
-                    padding: 0.65rem;
-                    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 0.8rem;
-                    font-weight: 700;
-                    font-size: 0.86rem;
-                    transition: transform 0.2s ease, box-shadow 0.2s ease;
-                    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.24);
-                    margin-top: auto;
-                }
-
-                .product-btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 24px rgba(236, 72, 153, 0.32);
-                }
-
-                @media (max-width: 768px) {
-                    .product-image {
-                        height: 118px;
-                    }
-
-                    .product-image img {
-                        height: 100%;
-                    }
-
-                    .product-info {
-                        padding: 0.68rem;
-                        gap: 0.42rem;
-                    }
-
-                    .product-name {
-                        font-size: 0.85rem;
-                        min-height: 2rem;
-                    }
-
-                    .product-description {
-                        font-size: 0.7rem;
-                        min-height: 1.9rem;
-                    }
-
-                    .price {
-                        font-size: 0.98rem;
-                    }
-
-                    .compare-price {
-                        font-size: 0.68rem;
-                    }
-
-                    .product-btn {
-                        min-height: 34px;
-                        font-size: 0.78rem;
-                        padding: 0.55rem;
-                    }
-                }
-
-                @media (max-width: 420px) {
-                    .product-image {
-                        height: 108px;
-                    }
-
-                    .product-image img {
-                        height: 100%;
-                    }
-
-                    .product-info {
-                        padding: 0.6rem;
-                    }
-
-                    .product-category {
-                        font-size: 0.62rem;
-                    }
-
-                    .product-name {
-                        font-size: 0.8rem;
-                    }
-
-                    .product-description {
-                        font-size: 0.67rem;
-                    }
-
-                    .price {
-                        font-size: 0.92rem;
-                    }
-                }
-            `}</style>
         </article>
     );
 }
