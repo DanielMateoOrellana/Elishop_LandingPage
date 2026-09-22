@@ -86,7 +86,7 @@ export class ProductsService {
                 orderBy: { createdAt: 'desc' },
                 include: {
                     category: true,
-                    images: { orderBy: { sortOrder: 'asc' }, take: 1 },
+                    images: { orderBy: { sortOrder: 'asc' }, take: 2 },
                     inventory: true,
                 },
             }),
