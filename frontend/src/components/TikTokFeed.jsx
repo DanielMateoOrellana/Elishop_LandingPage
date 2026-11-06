@@ -1,84 +1,67 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api';
+import { getTikTokPost, TIKTOK_HANDLE, TIKTOK_PROFILE_URL } from '../data/tiktok';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import TikTokPlayer from './TikTokPlayer';
 import '../styles/tiktok.css';
 
-const FALLBACK_VIDEOS = [
-    "https://www.tiktok.com/@elis_shop.ec/video/7604520250343902482",
-    "https://www.tiktok.com/@elis_shop.ec/video/7604517668057632007",
-    "https://www.tiktok.com/@elis_shop.ec/video/7604508393847524626",
-    "https://www.tiktok.com/@elis_shop.ec/video/7604503947918789895",
-    "https://www.tiktok.com/@elis_shop.ec/photo/7604257014038088968",
-];
-
-const CARD_WIDTH = 325;
-const CARD_GAP = 28;
-const PLACEHOLDER_COUNT = 3;
-
-function getVideoId(url) {
-    if (url.includes('/video/')) {
-        return url.split('/video/')[1]?.split('?')[0];
-    }
-    if (url.includes('/photo/')) {
-        return url.split('/photo/')[1]?.split('?')[0];
-    }
-    return null;
-}
-
 const TikTokFeed = () => {
-    const [videos, setVideos] = useState([]);
+    const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const [canScroll, setCanScroll] = useState({ previous: false, next: false });
+    const viewportRef = useRef(null);
     const [headerRef, headerVisible] = useScrollAnimation();
-    const visibleCount = 3;
 
     useEffect(() => {
+        const controller = new AbortController();
         const fetchTikToks = async () => {
             try {
-                const { data } = await api.get('/tiktok');
-                // Backend returns objects array { id, url, sortOrder }
-                if (Array.isArray(data) && data.length > 0) {
-                    setVideos(data.map(v => v.url));
-                } else {
-                    setVideos(FALLBACK_VIDEOS);
+                const { data } = await api.get('/tiktok', { signal: controller.signal, timeout: 10000 });
+                if (!controller.signal.aborted && Array.isArray(data)) {
+                    const unique = new Map();
+                    data.forEach(video => {
+                        const post = getTikTokPost(video.url);
+                        if (post) unique.set(post.id, post);
+                    });
+                    setPosts([...unique.values()]);
                 }
             } catch (error) {
-                console.error("Error fetching TikToks", error);
-                setVideos(FALLBACK_VIDEOS);
+                if (!controller.signal.aborted) console.error('Error fetching TikToks', error);
             } finally {
-                setLoading(false);
+                if (!controller.signal.aborted) setLoading(false);
             }
         };
         fetchTikToks();
+        return () => controller.abort();
     }, []);
 
-    const maxIndex = Math.max(0, videos.length - visibleCount);
-
     useEffect(() => {
-        if (videos.length === 0) return;
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+        const updateNavigation = () => setCanScroll({
+            previous: viewport.scrollLeft > 1,
+            next: viewport.scrollLeft + viewport.clientWidth < viewport.scrollWidth - 1,
+        });
+        const observer = new ResizeObserver(updateNavigation);
+        observer.observe(viewport);
+        viewport.addEventListener('scroll', updateNavigation, { passive: true });
+        updateNavigation();
+        return () => {
+            observer.disconnect();
+            viewport.removeEventListener('scroll', updateNavigation);
+        };
+    }, [loading, posts]);
 
-        if (!document.querySelector('script[src="https://www.tiktok.com/embed.js"]')) {
-            const script = document.createElement('script');
-            script.src = "https://www.tiktok.com/embed.js";
-            script.async = true;
-            document.body.appendChild(script);
-        } else {
-            // Recargar cuando los videos cambien
-            setTimeout(() => {
-                if (window.tiktok && window.tiktok.embed) {
-                    window.tiktok.embed.load();
-                }
-            }, 500);
-        }
-    }, [videos]);
-
-    const nextSlide = () => {
-        setCurrentIndex(prev => Math.min(prev + 1, maxIndex));
-    };
-
-    const prevSlide = () => {
-        setCurrentIndex(prev => Math.max(prev - 1, 0));
+    const scroll = (direction) => {
+        const viewport = viewportRef.current;
+        const card = viewport?.querySelector('.tiktok-card');
+        if (!card) return;
+        const gap = parseFloat(getComputedStyle(viewport.querySelector('.tiktok-track')).gap) || 0;
+        viewport.scrollBy({
+            left: direction * (card.getBoundingClientRect().width + gap),
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+        });
     };
 
     return (
@@ -90,65 +73,28 @@ const TikTokFeed = () => {
                     <p className="section-description">Descubre novedades, ideas de regalo y el detrás de escena de Elishop.</p>
                 </div>
 
-                <div className="tiktok-carousel">
-                    <button
-                        type="button"
-                        onClick={prevSlide}
-                        className="tiktok-nav"
-                        disabled={loading || currentIndex === 0}
-                        aria-label="Videos anteriores"
-                    >
-                        <ChevronLeft size={22} />
-                    </button>
-
-                    <div className="tiktok-viewport">
-                        <div
-                            className="tiktok-track"
-                            style={{
-                                transform: `translateX(-${currentIndex * (CARD_WIDTH + CARD_GAP)}px)`
-                            }}
-                        >
-                            {loading
-                                ? Array.from({ length: PLACEHOLDER_COUNT }, (_, index) => (
-                                    <div key={index} className="tiktok-card is-placeholder" aria-hidden="true" />
-                                ))
-                                : videos.map((url, index) => {
-                                    const videoId = getVideoId(url);
-                                    if (!videoId) return null;
-
-                                    return (
-                                        <div key={index} className="tiktok-card">
-                                            <blockquote
-                                                className="tiktok-embed"
-                                                cite={url}
-                                                data-video-id={videoId}
-                                                style={{ maxWidth: `${CARD_WIDTH}px`, minWidth: `${CARD_WIDTH}px` }}
-                                            >
-                                                <section>
-                                                    <a target="_blank" href={url} rel="noreferrer">
-                                                        @{url.split('@')[1]?.split('/')[0]}
-                                                    </a>
-                                                </section>
-                                            </blockquote>
-                                        </div>
-                                    );
-                                })}
+                {loading ? (
+                    <p className="tiktok-notice" role="status">Cargando videos…</p>
+                ) : posts.length > 0 ? (
+                    <div className="tiktok-carousel">
+                        <button type="button" onClick={() => scroll(-1)} className="tiktok-nav" disabled={!canScroll.previous} aria-label="Videos anteriores">
+                            <ChevronLeft size={22} />
+                        </button>
+                        <div className="tiktok-viewport" ref={viewportRef} tabIndex={0} role="region" aria-label="Videos de EliShop en TikTok">
+                            <div className="tiktok-track">
+                                {posts.map((post, index) => <TikTokPlayer key={post.id} post={post} index={index} />)}
+                            </div>
                         </div>
+                        <button type="button" onClick={() => scroll(1)} className="tiktok-nav" disabled={!canScroll.next} aria-label="Videos siguientes">
+                            <ChevronRight size={22} />
+                        </button>
                     </div>
-
-                    <button
-                        type="button"
-                        onClick={nextSlide}
-                        className="tiktok-nav"
-                        disabled={loading || currentIndex >= maxIndex}
-                        aria-label="Videos siguientes"
-                    >
-                        <ChevronRight size={22} />
-                    </button>
-                </div>
+                ) : (
+                    <p className="tiktok-notice">Mira nuestras últimas publicaciones en @{TIKTOK_HANDLE}.</p>
+                )}
 
                 <div className="tiktok-follow">
-                    <a href="https://www.tiktok.com/@elis_shop.ec" target="_blank" rel="noopener noreferrer" className="tiktok-follow-btn">
+                    <a href={TIKTOK_PROFILE_URL} target="_blank" rel="noopener noreferrer" className="tiktok-follow-btn">
                         Ver más en TikTok <span aria-hidden="true">→</span>
                     </a>
                 </div>

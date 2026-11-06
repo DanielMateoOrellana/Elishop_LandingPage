@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../api';
 import { Save, Video, Link as LinkIcon, ExternalLink } from 'lucide-react';
+import { getTikTokPost, TIKTOK_PROFILE_URL } from '../../data/tiktok';
 
 export default function TikTokManager() {
     const [videos, setVideos] = useState(['', '', '', '', '']);
@@ -20,18 +21,11 @@ export default function TikTokManager() {
             if (data && data.length > 0) {
                 const urls = Array(5).fill('');
                 data.forEach((v, i) => {
-                    if (i < 5) urls[i] = v.url;
+                    if (i < 5) urls[i] = getTikTokPost(v.url)?.url || v.url;
                 });
                 setVideos(urls);
             } else {
-                // Si no hay videos en BD, usar los por defecto para facilitar
-                setVideos([
-                    "https://www.tiktok.com/@elis_shop.ec/video/7604520250343902482",
-                    "https://www.tiktok.com/@elis_shop.ec/video/7604517668057632007",
-                    "https://www.tiktok.com/@elis_shop.ec/video/7604508393847524626",
-                    "https://www.tiktok.com/@elis_shop.ec/video/7604503947918789895",
-                    "https://www.tiktok.com/@elis_shop.ec/photo/7604257014038088968",
-                ]);
+                setVideos(Array(5).fill(''));
             }
 
         } catch (error) {
@@ -93,7 +87,7 @@ export default function TikTokManager() {
                                     type="text"
                                     value={url}
                                     onChange={(e) => handleChange(index, e.target.value)}
-                                    placeholder="https://www.tiktok.com/@usuario/video/..."
+                                    placeholder={`${TIKTOK_PROFILE_URL}/video/...`}
                                     disabled={loading || saving}
                                 />
                             </div>
