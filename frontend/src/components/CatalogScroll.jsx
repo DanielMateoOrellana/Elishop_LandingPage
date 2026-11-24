@@ -2,28 +2,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link } from 'react-router-dom';
 import { MapPin, MessageCircle, Truck } from 'lucide-react';
 import api from '../api';
-import {
-    products as fallbackProducts,
-    categories as fallbackCategories,
-    WHATSAPP_NUMBER,
-} from '../data/products';
+import { WHATSAPP_NUMBER } from '../data/products';
 import '../styles/catalog.css';
 
 const PLACEHOLDER_IMAGE = 'https://placehold.co/400x400/f6eef1/a59a9e?text=Sin+Imagen';
-// Tiempo máximo mostrando skeletons antes de enseñar el catálogo local mientras responde la API
-const SKELETON_TIMEOUT_MS = 2500;
-const SKELETON_COUNT = 8;
 const LOW_STOCK_THRESHOLD = 3;
 const MAX_STAGGER_ITEMS = 12;
-
-function slugify(value) {
-    return value
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-}
 
 function buildGroupedProducts(categories, products) {
     const grouped = {};
@@ -36,61 +20,6 @@ function buildGroupedProducts(categories, products) {
 function getTotalStock(product) {
     return (product.inventory?.stockZaruma || 0) + (product.inventory?.stockSangolqui || 0);
 }
-
-function createFallbackCatalog() {
-    const normalizedCategories = fallbackCategories.map((category) => ({
-        id: slugify(category.name),
-        name: category.name,
-        icon: category.icon,
-        color: category.color,
-    }));
-
-    const categoryByName = new Map(
-        normalizedCategories.map((category) => [category.name.toLowerCase(), category]),
-    );
-
-    fallbackProducts.forEach((product) => {
-        const key = product.category.toLowerCase();
-        if (!categoryByName.has(key)) {
-            const dynamicCategory = {
-                id: slugify(product.category),
-                name: product.category,
-                icon: '*',
-                color: '#ec4899',
-            };
-            categoryByName.set(key, dynamicCategory);
-            normalizedCategories.push(dynamicCategory);
-        }
-    });
-
-    const normalizedProducts = fallbackProducts.map((product, index) => {
-        const category = categoryByName.get(product.category.toLowerCase());
-
-        return {
-            id: `fallback-${product.id ?? index}`,
-            name: product.name,
-            slug: slugify(product.name),
-            description: product.description || '',
-            price: 18.99 + index,
-            compareAtPrice: product.featured ? 24.99 + index : null,
-            categoryId: category.id,
-            category,
-            images: [{ url: product.image }],
-            inventory: {
-                stockZaruma: 2 + (index % 4),
-                stockSangolqui: 1 + (index % 3),
-            },
-            isFeatured: Boolean(product.featured),
-        };
-    });
-
-    return {
-        categories: normalizedCategories,
-        products: normalizedProducts,
-    };
-}
-
-const FALLBACK_CATALOG = createFallbackCatalog();
 
 function sortProducts(products, sortBy) {
     const sortedProducts = [...products];
@@ -106,15 +35,11 @@ function sortProducts(products, sortBy) {
 }
 
 export default function CatalogScroll() {
-    const [categories, setCategories] = useState(() => FALLBACK_CATALOG.categories);
-    const [productsByCategory, setProductsByCategory] = useState(() =>
-        buildGroupedProducts(FALLBACK_CATALOG.categories, FALLBACK_CATALOG.products),
-    );
-    const [selectedCategory, setSelectedCategory] = useState(() => FALLBACK_CATALOG.categories[0]?.id ?? null);
+    const [categories, setCategories] = useState([]);
+    const [productsByCategory, setProductsByCategory] = useState({});
+    const [selectedCategory, setSelectedCategory] = useState(null);
     const [sortBy, setSortBy] = useState('price-asc');
-    const [isSyncing, setIsSyncing] = useState(true);
-    const [showSkeleton, setShowSkeleton] = useState(true);
-    const [dataSource, setDataSource] = useState('fallback');
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         let isMounted = true;
@@ -132,7 +57,6 @@ export default function CatalogScroll() {
                 if (categoriesData.length > 0 && liveProducts.length > 0) {
                     setCategories(categoriesData);
                     setProductsByCategory(buildGroupedProducts(categoriesData, liveProducts));
-                    setDataSource('live');
                     setSelectedCategory((previousCategory) =>
                         categoriesData.some((category) => category.id === previousCategory)
                             ? previousCategory
@@ -143,18 +67,14 @@ export default function CatalogScroll() {
                 console.error('Error fetching catalog data:', error);
             } finally {
                 if (isMounted) {
-                    setIsSyncing(false);
-                    setShowSkeleton(false);
+                    setIsLoading(false);
                 }
             }
         };
 
         fetchData();
-        const skeletonTimeoutId = window.setTimeout(() => setShowSkeleton(false), SKELETON_TIMEOUT_MS);
-
         return () => {
             isMounted = false;
-            window.clearTimeout(skeletonTimeoutId);
         };
     }, []);
 
@@ -171,7 +91,7 @@ export default function CatalogScroll() {
 
     const displayedProducts = sortProducts(categoryProducts, sortBy);
     // Cambiar la key remonta el grid y vuelve a disparar la entrada escalonada de las tarjetas
-    const gridKey = `${dataSource}-${selectedCategory ?? 'all'}-${sortBy}`;
+    const gridKey = `${selectedCategory ?? 'all'}-${sortBy}`;
 
     return (
         <section className="catalog-scroll" id="catalog">
@@ -187,23 +107,18 @@ export default function CatalogScroll() {
                 </ul>
             </header>
 
-            <CategoryFilters
-                categories={categories}
-                selectedCategory={selectedCategory}
-                onSelect={setSelectedCategory}
-            />
+            {!isLoading ? (
+                <CategoryFilters
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onSelect={setSelectedCategory}
+                />
+            ) : null}
 
-            <div className="catalog-toolbar">
+            {!isLoading ? <div className="catalog-toolbar">
                 <p className="catalog-count">
-                    {showSkeleton ? (
-                        'Cargando productos…'
-                    ) : (
-                        <>
-                            <strong>{displayedProducts.length}</strong>{' '}
-                            {displayedProducts.length === 1 ? 'producto' : 'productos'}
-                        </>
-                    )}
-                    {!showSkeleton && isSyncing ? <span className="catalog-sync">Actualizando</span> : null}
+                    <strong>{displayedProducts.length}</strong>{' '}
+                    {displayedProducts.length === 1 ? 'producto' : 'productos'}
                 </p>
 
                 <label className="sort-control">
@@ -213,16 +128,10 @@ export default function CatalogScroll() {
                         <option value="price-desc">Precio más alto</option>
                     </select>
                 </label>
-            </div>
+            </div> : null}
 
             <div className="products-list-shell">
-                {showSkeleton ? (
-                    <div className="catalog-grid" aria-busy="true">
-                        {Array.from({ length: SKELETON_COUNT }, (_, index) => (
-                            <SkeletonCard key={index} />
-                        ))}
-                    </div>
-                ) : displayedProducts.length > 0 ? (
+                {!isLoading && displayedProducts.length > 0 ? (
                     <div className="catalog-grid" key={gridKey}>
                         {displayedProducts.map((product, index) => (
                             <ProductCard
@@ -232,11 +141,11 @@ export default function CatalogScroll() {
                             />
                         ))}
                     </div>
-                ) : (
+                ) : !isLoading ? (
                     <div className="empty-catalog">
                         <p>No hay productos para ese filtro.</p>
                     </div>
-                )}
+                ) : null}
             </div>
         </section>
     );
@@ -316,20 +225,6 @@ function CategoryFilters({ categories, selectedCategory, onSelect }) {
                     {category.name}
                 </button>
             ))}
-        </div>
-    );
-}
-
-function SkeletonCard() {
-    return (
-        <div className="catalog-card skeleton-card" aria-hidden="true">
-            <div className="card-media" />
-            <div className="card-body">
-                <span className="skeleton-line is-short" />
-                <span className="skeleton-line is-title" />
-                <span className="skeleton-line is-price" />
-                <span className="skeleton-line is-button" />
-            </div>
         </div>
     );
 }
